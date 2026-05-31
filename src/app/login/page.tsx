@@ -1,10 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
-  const router = useRouter();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -15,19 +13,24 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
 
-    const res = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password }),
-    });
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
 
-    if (res.ok) {
-      router.push('/');
-    } else {
-      const data = await res.json();
-      setError(data.error || '登录失败');
+      if (res.ok) {
+        window.location.href = '/';
+      } else {
+        const data = await res.json();
+        setError(data.error || '登录失败');
+        setLoading(false);
+      }
+    } catch {
+      setError('网络错误，请检查服务器连接');
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
