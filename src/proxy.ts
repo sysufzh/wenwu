@@ -3,10 +3,9 @@ import { getSessionFromRequest } from '@/lib/auth';
 
 const PUBLIC_PATHS = ['/login', '/api/auth/login'];
 
-export async function middleware(request: NextRequest) {
+export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Skip public paths and static files
   if (PUBLIC_PATHS.some(p => pathname.startsWith(p)) || pathname.startsWith('/_next') || pathname.startsWith('/favicon')) {
     return NextResponse.next();
   }
@@ -14,11 +13,9 @@ export async function middleware(request: NextRequest) {
   const session = await getSessionFromRequest(request);
 
   if (!session) {
-    // API requests: return 401
     if (pathname.startsWith('/api/')) {
       return NextResponse.json({ error: '未登录' }, { status: 401 });
     }
-    // Page requests: redirect to login
     const loginUrl = new URL('/login', request.url);
     return NextResponse.redirect(loginUrl);
   }
