@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getRelicById, updateRelic, deleteRelic } from '@/db/relics';
 import { getRelicHistory } from '@/db/records';
+import { getSession } from '@/lib/auth';
 
 export async function GET(
   request: NextRequest,
@@ -51,6 +52,11 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await getSession();
+    if (!session || session.role !== 'admin') {
+      return NextResponse.json({ error: '无权限，仅管理员可删除文物' }, { status: 403 });
+    }
+
     const { id } = await params;
     const relicId = parseInt(id);
     if (isNaN(relicId)) {

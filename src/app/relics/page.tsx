@@ -34,6 +34,13 @@ function RelicsContent() {
   const [search, setSearch] = useState(searchParams.get('search') || '');
   const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || '');
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/auth/me').then(r => r.json()).then(data => {
+      if (data.role === 'admin') setIsAdmin(true);
+    });
+  }, []);
 
   const fetchRelics = useCallback(async () => {
     setLoading(true);
@@ -136,7 +143,7 @@ function RelicsContent() {
                       <div className="flex items-center justify-end gap-1.5">
                         <Link href={`/relics/${relic.id}`} className="text-xs px-2 py-1 rounded bg-stone-100 text-stone-700 hover:bg-stone-200">详情</Link>
                         <Link href={`/relics/${relic.id}/edit`} className="text-xs px-2 py-1 rounded bg-stone-100 text-stone-700 hover:bg-stone-200">编辑</Link>
-                        <button onClick={() => handleDelete(relic.id, relic.artifact_name)} className="text-xs px-2 py-1 rounded bg-red-50 text-red-700 hover:bg-red-100">删除</button>
+                        {isAdmin && <button onClick={() => handleDelete(relic.id, relic.artifact_name)} className="text-xs px-2 py-1 rounded bg-red-50 text-red-700 hover:bg-red-100">删除</button>}
                       </div>
                     </td>
                   </tr>

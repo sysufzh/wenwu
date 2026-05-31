@@ -36,6 +36,15 @@ CREATE TABLE IF NOT EXISTS checkin_records (
   FOREIGN KEY (checkout_record_id) REFERENCES checkout_records(id)
 );
 
+CREATE TABLE IF NOT EXISTS users (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  username TEXT NOT NULL UNIQUE,
+  password_hash TEXT NOT NULL,
+  role TEXT DEFAULT 'user' CHECK(role IN ('admin', 'user')),
+  display_name TEXT DEFAULT '',
+  created_at DATETIME DEFAULT (datetime('now', 'localtime'))
+);
+
 CREATE INDEX IF NOT EXISTS idx_relics_status ON relics(status);
 CREATE INDEX IF NOT EXISTS idx_relics_artifact_name ON relics(artifact_name);
 CREATE INDEX IF NOT EXISTS idx_checkout_records_relic_id ON checkout_records(relic_id);
