@@ -1,12 +1,20 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+
+interface FieldValues {
+  warehouseNumbers: string[];
+  shelfNumbers: string[];
+  materials: string[];
+  lastUsed: { warehouse_number: string; shelf_number: string; material: string } | null;
+}
 
 export default function NewRelicPage() {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
+  const [fieldValues, setFieldValues] = useState<FieldValues | null>(null);
   const [form, setForm] = useState({
     artifact_name: '',
     warehouse_number: '',
@@ -16,6 +24,20 @@ export default function NewRelicPage() {
     other_info: '',
     remarks: '',
   });
+
+  useEffect(() => {
+    fetch('/api/field-values').then(r => r.json()).then(data => {
+      setFieldValues(data);
+      if (data.lastUsed) {
+        setForm(prev => ({
+          ...prev,
+          warehouse_number: data.lastUsed.warehouse_number || '',
+          shelf_number: data.lastUsed.shelf_number || '',
+          material: data.lastUsed.material || '',
+        }));
+      }
+    });
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,6 +64,8 @@ export default function NewRelicPage() {
     setForm(prev => ({ ...prev, [field]: value }));
   };
 
+  const datalistId = (name: string) => `dl-${name}`;
+
   return (
     <div className="max-w-lg mx-auto space-y-4">
       <div className="flex items-center gap-3">
@@ -60,12 +84,24 @@ export default function NewRelicPage() {
           <div>
             <label className="block text-sm font-medium text-stone-700 mb-1">库房号</label>
             <input type="text" value={form.warehouse_number} onChange={e => updateField('warehouse_number', e.target.value)}
+              list={datalistId('warehouse')}
               className="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+            {fieldValues && (
+              <datalist id={datalistId('warehouse')}>
+                {fieldValues.warehouseNumbers.map(v => <option key={v} value={v} />)}
+              </datalist>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-stone-700 mb-1">架号</label>
             <input type="text" value={form.shelf_number} onChange={e => updateField('shelf_number', e.target.value)}
+              list={datalistId('shelf')}
               className="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+            {fieldValues && (
+              <datalist id={datalistId('shelf')}>
+                {fieldValues.shelfNumbers.map(v => <option key={v} value={v} />)}
+              </datalist>
+            )}
           </div>
         </div>
 
@@ -79,7 +115,13 @@ export default function NewRelicPage() {
           <div>
             <label className="block text-sm font-medium text-stone-700 mb-1">材质</label>
             <input type="text" value={form.material} onChange={e => updateField('material', e.target.value)}
+              list={datalistId('material')}
               className="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" placeholder="如陶、瓷、铜、玉等" />
+            {fieldValues && (
+              <datalist id={datalistId('material')}>
+                {fieldValues.materials.map(v => <option key={v} value={v} />)}
+              </datalist>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-stone-700 mb-1">其他</label>

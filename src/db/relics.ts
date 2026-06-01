@@ -143,6 +143,30 @@ export function updateRelicStatus(id: number, status: '在库' | '出库'): void
   db.prepare('UPDATE relics SET status = ?, updated_at = datetime(\'now\', \'localtime\') WHERE id = ?').run(status, id);
 }
 
+export function getDistinctFieldValues() {
+  const db = getDb();
+  const warehouseNumbers = db.prepare(
+    "SELECT DISTINCT warehouse_number FROM relics WHERE warehouse_number != '' ORDER BY warehouse_number"
+  ).all() as { warehouse_number: string }[];
+  const shelfNumbers = db.prepare(
+    "SELECT DISTINCT shelf_number FROM relics WHERE shelf_number != '' ORDER BY shelf_number"
+  ).all() as { shelf_number: string }[];
+  const materials = db.prepare(
+    "SELECT DISTINCT material FROM relics WHERE material != '' ORDER BY material"
+  ).all() as { material: string }[];
+
+  return {
+    warehouseNumbers: warehouseNumbers.map(r => r.warehouse_number),
+    shelfNumbers: shelfNumbers.map(r => r.shelf_number),
+    materials: materials.map(r => r.material),
+  };
+}
+
+export function getLastRelic(): Relic | undefined {
+  const db = getDb();
+  return db.prepare('SELECT * FROM relics ORDER BY id DESC LIMIT 1').get() as Relic | undefined;
+}
+
 export function getRelicStats() {
   const db = getDb();
   const total = db.prepare('SELECT COUNT(*) as count FROM relics').get() as { count: number };

@@ -4,11 +4,18 @@ import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
+interface FieldValues {
+  warehouseNumbers: string[];
+  shelfNumbers: string[];
+  materials: string[];
+}
+
 export default function EditRelicPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [fieldValues, setFieldValues] = useState<FieldValues | null>(null);
   const [form, setForm] = useState({
     artifact_name: '',
     warehouse_number: '',
@@ -20,6 +27,9 @@ export default function EditRelicPage({ params }: { params: Promise<{ id: string
   });
 
   useEffect(() => {
+    fetch('/api/field-values').then(r => r.json()).then(data => {
+      setFieldValues(data);
+    });
     fetch(`/api/relics/${id}`).then(r => r.json()).then(data => {
       const relic = data.relic || data;
       if (!relic || relic.error) {
@@ -81,12 +91,24 @@ export default function EditRelicPage({ params }: { params: Promise<{ id: string
           <div>
             <label className="block text-sm font-medium text-stone-700 mb-1">库房号</label>
             <input type="text" value={form.warehouse_number} onChange={e => updateField('warehouse_number', e.target.value)}
+              list="dl-warehouse-edit"
               className="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+            {fieldValues && (
+              <datalist id="dl-warehouse-edit">
+                {fieldValues.warehouseNumbers.map(v => <option key={v} value={v} />)}
+              </datalist>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-stone-700 mb-1">架号</label>
             <input type="text" value={form.shelf_number} onChange={e => updateField('shelf_number', e.target.value)}
+              list="dl-shelf-edit"
               className="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+            {fieldValues && (
+              <datalist id="dl-shelf-edit">
+                {fieldValues.shelfNumbers.map(v => <option key={v} value={v} />)}
+              </datalist>
+            )}
           </div>
         </div>
 
@@ -100,7 +122,13 @@ export default function EditRelicPage({ params }: { params: Promise<{ id: string
           <div>
             <label className="block text-sm font-medium text-stone-700 mb-1">材质</label>
             <input type="text" value={form.material} onChange={e => updateField('material', e.target.value)}
+              list="dl-material-edit"
               className="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+            {fieldValues && (
+              <datalist id="dl-material-edit">
+                {fieldValues.materials.map(v => <option key={v} value={v} />)}
+              </datalist>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-stone-700 mb-1">其他</label>

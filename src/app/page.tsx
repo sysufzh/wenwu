@@ -12,17 +12,44 @@ interface Stats {
 export default function HomePage() {
   const [stats, setStats] = useState<Stats>({ total: 0, inStock: 0, outStock: 0 });
   const [recent, setRecent] = useState<{ checkouts: any[]; checkins: any[] }>({ checkouts: [], checkins: [] });
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [backupMsg, setBackupMsg] = useState('');
 
   useEffect(() => {
+    fetch('/api/auth/me').then(r => r.json()).then(data => {
+      if (data.role === 'admin') setIsAdmin(true);
+    });
     fetch('/api/stats').then(r => r.json()).then(setStats);
     fetch('/api/records?limit=5').then(r => r.json()).then(data => {
       setRecent({ checkouts: data.checkouts || [], checkins: data.checkins || [] });
     });
   }, []);
 
+  const handleBackup = async () => {
+    setBackupMsg('');
+    const res = await fetch('/api/backup', { method: 'POST' });
+    const data = await res.json();
+    if (res.ok) {
+      setBackupMsg(`备份成功: ${data.file}`);
+    } else {
+      setBackupMsg(`备份失败: ${data.error}`);
+    }
+    setTimeout(() => setBackupMsg(''), 4000);
+  };
+
   return (
     <div className="max-w-5xl mx-auto space-y-6">
-      <h2 className="text-2xl font-bold text-stone-800">总览面板</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold text-stone-800">总览面板</h2>
+        {isAdmin && (
+          <button onClick={handleBackup} className="text-xs px-3 py-1.5 rounded-lg border border-stone-300 text-stone-600 hover:bg-stone-100 transition-colors">
+            备份数据库
+          </button>
+        )}
+      </div>
+      {backupMsg && (
+        <div className={`text-sm px-4 py-2 rounded-lg ${backupMsg.includes('成功') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>{backupMsg}</div>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-white rounded-xl shadow-sm p-5 border border-stone-200">
