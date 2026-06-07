@@ -5,10 +5,12 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const typeParam = searchParams.get('type') || '';
+    const ledgerParam = searchParams.get('ledgerType') || '';
     const params: TransactionListParams = {
       search: searchParams.get('search') || '',
       type: (typeParam === '收入' || typeParam === '支出') ? typeParam : '',
       category: searchParams.get('category') || '',
+      ledgerType: (ledgerParam === '生活' || ledgerParam === '工作') ? ledgerParam : '',
       dateFrom: searchParams.get('dateFrom') || '',
       dateTo: searchParams.get('dateTo') || '',
       page: parseInt(searchParams.get('page') || '1'),

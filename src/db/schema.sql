@@ -103,6 +103,8 @@ CREATE TABLE IF NOT EXISTS transactions (
   payment_method TEXT DEFAULT '',
   handler TEXT DEFAULT '',
   remarks TEXT DEFAULT '',
+  ledger_type TEXT DEFAULT '工作' CHECK(ledger_type IN ('生活','工作')),
+  funding_source TEXT DEFAULT '',
   created_at DATETIME DEFAULT (datetime('now','localtime')),
   updated_at DATETIME DEFAULT (datetime('now','localtime'))
 );

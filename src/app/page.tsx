@@ -30,9 +30,8 @@ export default function HomePage() {
       <div className="w-full max-w-md mx-auto">
         {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="text-2xl font-bold text-stone-800 tracking-wide">中国社会科学院东南工作队</h1>
-          <h2 className="text-xl text-stone-700 mt-1">队务管理系统</h2>
-          <p className="text-sm text-stone-400 mt-2">考古研究所</p>
+          <h1 className="text-2xl font-bold text-stone-800 tracking-wide">中国社会科学院考古研究所</h1>
+          <h2 className="text-xl text-stone-700 mt-1">东南工作队队务管理系统</h2>
         </div>
 
         {/* Backup message */}

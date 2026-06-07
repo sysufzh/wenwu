@@ -37,9 +37,8 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-stone-100 px-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-stone-800">中国社会科学院东南工作队</h1>
-          <p className="text-sm text-stone-500 mt-1">队务管理系统</p>
-          <p className="text-xs text-stone-400 mt-1">考古研究所</p>
+          <h1 className="text-2xl font-bold text-stone-800">中国社会科学院考古研究所</h1>
+          <p className="text-sm text-stone-500 mt-1">东南工作队队务管理系统</p>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm border border-stone-200 p-6 space-y-4">

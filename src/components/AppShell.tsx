@@ -5,7 +5,7 @@ import NavSidebar, { SubSystemConfig } from './NavSidebar';
 
 const relicConfig: SubSystemConfig = {
   title: '文物库房台账',
-  subtitle: '考古研究所东南队',
+  subtitle: '中国社会科学院考古研究所东南工作队',
   navItems: [
     { href: '/relics', label: '文物列表', icon: '📦' },
     { href: '/relics/new', label: '新建文物', icon: '➕' },
@@ -19,7 +19,7 @@ const relicConfig: SubSystemConfig = {
 
 const toolConfig: SubSystemConfig = {
   title: '工具管理系统',
-  subtitle: '考古研究所东南队',
+  subtitle: '中国社会科学院考古研究所东南工作队',
   navItems: [
     { href: '/tools', label: '工具列表', icon: '🔧' },
     { href: '/tools/new', label: '新建工具', icon: '➕' },
@@ -33,10 +33,11 @@ const toolConfig: SubSystemConfig = {
 
 const accountingConfig: SubSystemConfig = {
   title: '记账系统',
-  subtitle: '考古研究所东南队',
+  subtitle: '中国社会科学院考古研究所东南工作队',
   navItems: [
-    { href: '/accounting', label: '记账明细', icon: '💰' },
-    { href: '/accounting/new', label: '新建记录', icon: '➕' },
+    { href: '/accounting', label: '账本选择', icon: '📊' },
+    { href: '/accounting/living', label: '生活账本', icon: '🍚' },
+    { href: '/accounting/work', label: '工作账本', icon: '💼' },
   ],
   backHref: '/',
   backLabel: '返回主页',

@@ -10,6 +10,8 @@ export interface Transaction {
   payment_method: string;
   handler: string;
   remarks: string;
+  ledger_type: '生活' | '工作';
+  funding_source: string;
   created_at: string;
   updated_at: string;
 }
@@ -23,6 +25,8 @@ export interface TransactionCreateInput {
   payment_method?: string;
   handler?: string;
   remarks?: string;
+  ledger_type?: '生活' | '工作';
+  funding_source?: string;
 }
 
 export interface TransactionUpdateInput extends Partial<TransactionCreateInput> {}
@@ -31,6 +35,7 @@ export interface TransactionListParams {
   search?: string;
   type?: '收入' | '支出' | '';
   category?: string;
+  ledgerType?: '生活' | '工作' | '';
   dateFrom?: string;
   dateTo?: string;
   page?: number;
@@ -39,7 +44,7 @@ export interface TransactionListParams {
 
 export function getTransactions(params: TransactionListParams = {}) {
   const db = getDb();
-  const { search, type, category, dateFrom, dateTo, page = 1, limit = 20 } = params;
+  const { search, type, category, ledgerType, dateFrom, dateTo, page = 1, limit = 20 } = params;
 
   let whereClause = 'WHERE 1=1';
   const conditions: Record<string, string | number> = {};
@@ -57,6 +62,11 @@ export function getTransactions(params: TransactionListParams = {}) {
   if (category) {
     whereClause += ' AND category = @category';
     conditions['category'] = category;
+  }
+
+  if (ledgerType) {
+    whereClause += ' AND ledger_type = @ledgerType';
+    conditions['ledgerType'] = ledgerType;
   }
 
   if (dateFrom) {
@@ -97,8 +107,8 @@ export function createTransaction(input: TransactionCreateInput): Transaction {
   const db = getDb();
   const now = new Date().toISOString();
   const stmt = db.prepare(
-    `INSERT INTO transactions (transaction_date, type, category, amount, description, payment_method, handler, remarks, created_at, updated_at)
-     VALUES (@transaction_date, @type, @category, @amount, @description, @payment_method, @handler, @remarks, @created_at, @updated_at)`
+    `INSERT INTO transactions (transaction_date, type, category, amount, description, payment_method, handler, remarks, ledger_type, funding_source, created_at, updated_at)
+     VALUES (@transaction_date, @type, @category, @amount, @description, @payment_method, @handler, @remarks, @ledger_type, @funding_source, @created_at, @updated_at)`
   );
   const result = stmt.run({
     transaction_date: input.transaction_date || '',
@@ -109,6 +119,8 @@ export function createTransaction(input: TransactionCreateInput): Transaction {
     payment_method: input.payment_method || '',
     handler: input.handler || '',
     remarks: input.remarks || '',
+    ledger_type: input.ledger_type || '工作',
+    funding_source: input.funding_source || '',
     created_at: now,
     updated_at: now,
   });
@@ -131,6 +143,8 @@ export function updateTransaction(id: number, input: TransactionUpdateInput): Tr
       payment_method = @payment_method,
       handler = @handler,
       remarks = @remarks,
+      ledger_type = @ledger_type,
+      funding_source = @funding_source,
       updated_at = @updated_at
     WHERE id = @id`
   );
@@ -144,6 +158,8 @@ export function updateTransaction(id: number, input: TransactionUpdateInput): Tr
     payment_method: input.payment_method ?? existing.payment_method,
     handler: input.handler ?? existing.handler,
     remarks: input.remarks ?? existing.remarks,
+    ledger_type: input.ledger_type ?? existing.ledger_type,
+    funding_source: input.funding_source ?? existing.funding_source,
     updated_at: now,
   });
   return getTransactionById(id);
@@ -155,15 +171,23 @@ export function deleteTransaction(id: number): boolean {
   return result.changes > 0;
 }
 
-export function getTransactionStats() {
+export function getTransactionStats(ledgerType?: '生活' | '工作') {
   const db = getDb();
 
-  const totalIncome = db.prepare("SELECT COALESCE(SUM(amount), 0) as total FROM transactions WHERE type = '收入'").get() as { total: number };
-  const totalExpense = db.prepare("SELECT COALESCE(SUM(amount), 0) as total FROM transactions WHERE type = '支出'").get() as { total: number };
+  let typeFilter = '';
+  const conditions: Record<string, string> = {};
+
+  if (ledgerType) {
+    typeFilter = ' AND ledger_type = @ledgerType';
+    conditions['ledgerType'] = ledgerType;
+  }
+
+  const totalIncome = db.prepare(`SELECT COALESCE(SUM(amount), 0) as total FROM transactions WHERE type = '收入'${typeFilter}`).get(conditions) as { total: number };
+  const totalExpense = db.prepare(`SELECT COALESCE(SUM(amount), 0) as total FROM transactions WHERE type = '支出'${typeFilter}`).get(conditions) as { total: number };
 
   const categoryBreakdown = db.prepare(
-    "SELECT category, type, COALESCE(SUM(amount), 0) as total FROM transactions GROUP BY type, category ORDER BY type, total DESC"
-  ).all() as { category: string; type: string; total: number }[];
+    `SELECT category, type, COALESCE(SUM(amount), 0) as total FROM transactions WHERE 1=1${typeFilter} GROUP BY type, category ORDER BY type, total DESC`
+  ).all(conditions) as { category: string; type: string; total: number }[];
 
   return {
     totalIncome: totalIncome.total,
@@ -184,6 +208,7 @@ export function seedTransactionCategories() {
   if (count.c > 0) return;
 
   const categories = [
+    // 工作支出
     { name: '办公费', type: '支出', sort_order: 1 },
     { name: '设备购置', type: '支出', sort_order: 2 },
     { name: '耗材费', type: '支出', sort_order: 3 },
@@ -192,6 +217,7 @@ export function seedTransactionCategories() {
     { name: '维修费', type: '支出', sort_order: 6 },
     { name: '运输费', type: '支出', sort_order: 7 },
     { name: '其他支出', type: '支出', sort_order: 8 },
+    // 工作收入
     { name: '项目经费', type: '收入', sort_order: 1 },
     { name: '所拨经费', type: '收入', sort_order: 2 },
     { name: '其他收入', type: '收入', sort_order: 3 },
