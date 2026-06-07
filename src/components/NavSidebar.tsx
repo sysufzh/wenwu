@@ -4,19 +4,19 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 
-const navItems = [
-  { href: '/', label: '总览', icon: '📊' },
-  { href: '/relics', label: '文物列表', icon: '📦' },
-  { href: '/relics/new', label: '新建文物', icon: '➕' },
-  { href: '/checkout', label: '出库登记', icon: '📤' },
-  { href: '/checkin', label: '入库登记', icon: '📥' },
-  { href: '/history', label: '出入库记录', icon: '📋' },
-  { href: '/tools', label: '工具列表', icon: '🔧' },
-  { href: '/tools/checkout', label: '工具出库', icon: '🔨' },
-  { href: '/tools/checkin', label: '工具入库', icon: '🪛' },
-  { href: '/tools/history', label: '工具记录', icon: '📝' },
-  { href: '/accounting', label: '记账', icon: '💰' },
-];
+export interface NavItem {
+  href: string;
+  label: string;
+  icon: string;
+}
+
+export interface SubSystemConfig {
+  title: string;
+  subtitle: string;
+  navItems: NavItem[];
+  backHref?: string;
+  backLabel?: string;
+}
 
 interface UserInfo {
   userId: number;
@@ -25,7 +25,7 @@ interface UserInfo {
   displayName: string;
 }
 
-export default function NavSidebar() {
+export default function NavSidebar({ config }: { config?: SubSystemConfig }) {
   const pathname = usePathname();
   const router = useRouter();
   const [user, setUser] = useState<UserInfo | null>(null);
@@ -46,6 +46,8 @@ export default function NavSidebar() {
     return pathname.startsWith(href);
   };
 
+  const navItems = config?.navItems || [];
+
   const userSection = user && (
     <div className="p-3 border-t border-stone-700">
       <div className="flex items-center gap-2 px-1">
@@ -63,15 +65,27 @@ export default function NavSidebar() {
     </div>
   );
 
+  const backLink = config?.backHref ? (
+    <Link
+      href={config.backHref}
+      className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-stone-400 hover:bg-stone-700 hover:text-white transition-colors"
+    >
+      <span>&larr;</span>
+      <span>{config.backLabel || '返回主页'}</span>
+    </Link>
+  ) : null;
+
   return (
     <>
       {/* Desktop sidebar */}
       <aside className="hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 lg:w-56 bg-stone-800 text-stone-100 z-30">
         <div className="p-4 border-b border-stone-700">
-          <h1 className="text-lg font-bold tracking-wide">文物库房台账</h1>
-          <p className="text-xs text-stone-400 mt-1">考古研究所东南队</p>
+          <h1 className="text-lg font-bold tracking-wide">{config?.title}</h1>
+          <p className="text-xs text-stone-400 mt-1">{config?.subtitle}</p>
         </div>
-        <nav className="flex-1 p-3 space-y-1">
+        <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+          {backLink}
+          {backLink && <div className="border-t border-stone-700 my-1" />}
           {navItems.map((item) => (
             <Link
               key={item.href}
