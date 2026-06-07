@@ -49,3 +49,70 @@ CREATE INDEX IF NOT EXISTS idx_relics_status ON relics(status);
 CREATE INDEX IF NOT EXISTS idx_relics_artifact_name ON relics(artifact_name);
 CREATE INDEX IF NOT EXISTS idx_checkout_records_relic_id ON checkout_records(relic_id);
 CREATE INDEX IF NOT EXISTS idx_checkin_records_relic_id ON checkin_records(relic_id);
+
+-- 仓库工具管理
+CREATE TABLE IF NOT EXISTS tools (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  tool_name TEXT NOT NULL,
+  category TEXT DEFAULT '',
+  quantity INTEGER DEFAULT 1,
+  warehouse_location TEXT DEFAULT '',
+  status TEXT DEFAULT '在库' CHECK(status IN ('在库','出库')),
+  responsible_person TEXT DEFAULT '',
+  purchase_date TEXT DEFAULT '',
+  remarks TEXT DEFAULT '',
+  created_at DATETIME DEFAULT (datetime('now','localtime')),
+  updated_at DATETIME DEFAULT (datetime('now','localtime'))
+);
+
+CREATE TABLE IF NOT EXISTS tool_checkout_records (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  tool_id INTEGER NOT NULL,
+  checkout_time DATETIME DEFAULT (datetime('now','localtime')),
+  checkout_person TEXT NOT NULL DEFAULT '',
+  purpose TEXT DEFAULT '',
+  created_at DATETIME DEFAULT (datetime('now','localtime')),
+  FOREIGN KEY (tool_id) REFERENCES tools(id)
+);
+
+CREATE TABLE IF NOT EXISTS tool_checkin_records (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  tool_id INTEGER NOT NULL,
+  checkout_record_id INTEGER NOT NULL,
+  checkin_time DATETIME DEFAULT (datetime('now','localtime')),
+  checkin_person TEXT NOT NULL DEFAULT '',
+  condition_notes TEXT DEFAULT '',
+  remarks TEXT DEFAULT '',
+  created_at DATETIME DEFAULT (datetime('now','localtime')),
+  FOREIGN KEY (tool_id) REFERENCES tools(id),
+  FOREIGN KEY (checkout_record_id) REFERENCES tool_checkout_records(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_tools_status ON tools(status);
+CREATE INDEX IF NOT EXISTS idx_tool_checkout_records_tool_id ON tool_checkout_records(tool_id);
+CREATE INDEX IF NOT EXISTS idx_tool_checkin_records_tool_id ON tool_checkin_records(tool_id);
+
+-- 记账
+CREATE TABLE IF NOT EXISTS transactions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  transaction_date TEXT NOT NULL DEFAULT '',
+  type TEXT NOT NULL DEFAULT '支出' CHECK(type IN ('收入','支出')),
+  category TEXT DEFAULT '',
+  amount REAL NOT NULL DEFAULT 0,
+  description TEXT DEFAULT '',
+  payment_method TEXT DEFAULT '',
+  handler TEXT DEFAULT '',
+  remarks TEXT DEFAULT '',
+  created_at DATETIME DEFAULT (datetime('now','localtime')),
+  updated_at DATETIME DEFAULT (datetime('now','localtime'))
+);
+
+CREATE TABLE IF NOT EXISTS transaction_categories (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  type TEXT NOT NULL CHECK(type IN ('收入','支出')),
+  sort_order INTEGER DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS idx_transactions_type ON transactions(type);
+CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(transaction_date);

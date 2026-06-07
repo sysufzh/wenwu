@@ -11,6 +11,11 @@ const navItems = [
   { href: '/checkout', label: '出库登记', icon: '📤' },
   { href: '/checkin', label: '入库登记', icon: '📥' },
   { href: '/history', label: '出入库记录', icon: '📋' },
+  { href: '/tools', label: '工具列表', icon: '🔧' },
+  { href: '/tools/checkout', label: '工具出库', icon: '🔨' },
+  { href: '/tools/checkin', label: '工具入库', icon: '🪛' },
+  { href: '/tools/history', label: '工具记录', icon: '📝' },
+  { href: '/accounting', label: '记账', icon: '💰' },
 ];
 
 interface UserInfo {

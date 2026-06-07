@@ -9,8 +9,22 @@ interface Stats {
   outStock: number;
 }
 
+interface ToolStats {
+  total: number;
+  inStock: number;
+  outStock: number;
+}
+
+interface AccountingStats {
+  totalIncome: number;
+  totalExpense: number;
+  balance: number;
+}
+
 export default function HomePage() {
   const [stats, setStats] = useState<Stats>({ total: 0, inStock: 0, outStock: 0 });
+  const [toolStats, setToolStats] = useState<ToolStats>({ total: 0, inStock: 0, outStock: 0 });
+  const [acctStats, setAcctStats] = useState<AccountingStats>({ totalIncome: 0, totalExpense: 0, balance: 0 });
   const [recent, setRecent] = useState<{ checkouts: any[]; checkins: any[] }>({ checkouts: [], checkins: [] });
   const [isAdmin, setIsAdmin] = useState(false);
   const [backupMsg, setBackupMsg] = useState('');
@@ -20,6 +34,8 @@ export default function HomePage() {
       if (data.role === 'admin') setIsAdmin(true);
     });
     fetch('/api/stats').then(r => r.json()).then(setStats);
+    fetch('/api/tools/stats').then(r => r.json()).then(setToolStats).catch(() => {});
+    fetch('/api/transactions/stats').then(r => r.json()).then(setAcctStats).catch(() => {});
     fetch('/api/records?limit=5').then(r => r.json()).then(data => {
       setRecent({ checkouts: data.checkouts || [], checkins: data.checkins || [] });
     });
@@ -82,6 +98,72 @@ export default function HomePage() {
         <Link href="/history" className="bg-white rounded-xl shadow-sm p-4 border border-stone-200 hover:border-amber-400 transition-colors text-center">
           <div className="text-2xl mb-1">&#128203;</div>
           <div className="text-sm font-medium text-stone-700">出入记录</div>
+        </Link>
+      </div>
+
+      {/* 工具管理 */}
+      <h3 className="text-lg font-bold text-stone-700 mt-2">工具管理</h3>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-white rounded-xl shadow-sm p-5 border border-stone-200">
+          <div className="text-sm text-stone-500">工具总数</div>
+          <div className="text-3xl font-bold text-stone-800 mt-1">{toolStats.total}</div>
+        </div>
+        <div className="bg-white rounded-xl shadow-sm p-5 border border-stone-200">
+          <div className="text-sm text-stone-500">在库工具</div>
+          <div className="text-3xl font-bold text-green-700 mt-1">{toolStats.inStock}</div>
+        </div>
+        <div className="bg-white rounded-xl shadow-sm p-5 border border-stone-200">
+          <div className="text-sm text-stone-500">出库工具</div>
+          <div className="text-3xl font-bold text-amber-700 mt-1">{toolStats.outStock}</div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <Link href="/tools/new" className="bg-white rounded-xl shadow-sm p-4 border border-stone-200 hover:border-amber-400 transition-colors text-center">
+          <div className="text-2xl mb-1">+</div>
+          <div className="text-sm font-medium text-stone-700">新建工具</div>
+        </Link>
+        <Link href="/tools/checkout" className="bg-white rounded-xl shadow-sm p-4 border border-stone-200 hover:border-amber-400 transition-colors text-center">
+          <div className="text-2xl mb-1">&uarr;</div>
+          <div className="text-sm font-medium text-stone-700">工具出库</div>
+        </Link>
+        <Link href="/tools/checkin" className="bg-white rounded-xl shadow-sm p-4 border border-stone-200 hover:border-amber-400 transition-colors text-center">
+          <div className="text-2xl mb-1">&darr;</div>
+          <div className="text-sm font-medium text-stone-700">工具入库</div>
+        </Link>
+        <Link href="/tools/history" className="bg-white rounded-xl shadow-sm p-4 border border-stone-200 hover:border-amber-400 transition-colors text-center">
+          <div className="text-2xl mb-1">&#128203;</div>
+          <div className="text-sm font-medium text-stone-700">工具记录</div>
+        </Link>
+      </div>
+
+      {/* 记账 */}
+      <h3 className="text-lg font-bold text-stone-700 mt-2">记账</h3>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-white rounded-xl shadow-sm p-5 border border-stone-200">
+          <div className="text-sm text-stone-500">总收入</div>
+          <div className="text-3xl font-bold text-green-700 mt-1">&yen;{acctStats.totalIncome.toLocaleString('zh-CN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
+        </div>
+        <div className="bg-white rounded-xl shadow-sm p-5 border border-stone-200">
+          <div className="text-sm text-stone-500">总支出</div>
+          <div className="text-3xl font-bold text-red-700 mt-1">&yen;{acctStats.totalExpense.toLocaleString('zh-CN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
+        </div>
+        <div className="bg-white rounded-xl shadow-sm p-5 border border-stone-200">
+          <div className="text-sm text-stone-500">结余</div>
+          <div className={`text-3xl font-bold mt-1 ${acctStats.balance >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+            &yen;{acctStats.balance.toLocaleString('zh-CN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <Link href="/accounting/new" className="bg-white rounded-xl shadow-sm p-4 border border-stone-200 hover:border-amber-400 transition-colors text-center">
+          <div className="text-2xl mb-1">+</div>
+          <div className="text-sm font-medium text-stone-700">新建记录</div>
+        </Link>
+        <Link href="/accounting" className="bg-white rounded-xl shadow-sm p-4 border border-stone-200 hover:border-amber-400 transition-colors text-center">
+          <div className="text-2xl mb-1">&#128203;</div>
+          <div className="text-sm font-medium text-stone-700">查看明细</div>
         </Link>
       </div>
 

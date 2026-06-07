@@ -2,6 +2,7 @@ import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
 import bcrypt from 'bcryptjs';
+import { seedTransactionCategories } from './transactions';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 const DB_PATH = path.join(DATA_DIR, 'wenwu.db');
@@ -18,6 +19,7 @@ function getDb(): Database.Database {
     db.pragma('foreign_keys = ON');
     initializeSchema();
     seedUsers();
+    seedTransactionCategories();
   }
   return db;
 }
