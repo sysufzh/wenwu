@@ -43,6 +43,36 @@ const accountingConfig: SubSystemConfig = {
   backLabel: '返回主页',
 };
 
+const vehicleConfig: SubSystemConfig = {
+  title: '田野用车使用登记',
+  subtitle: '中国社会科学院考古研究所东南工作队',
+  navItems: [
+    { href: '/vehicles', label: '用车记录', icon: '🚗' },
+  ],
+  backHref: '/',
+  backLabel: '返回主页',
+};
+
+const assetsConfig: SubSystemConfig = {
+  title: '固定资产登记',
+  subtitle: '中国社会科学院考古研究所东南工作队',
+  navItems: [
+    { href: '/assets', label: '资产列表', icon: '🏢' },
+  ],
+  backHref: '/',
+  backLabel: '返回主页',
+};
+
+const sealConfig: SubSystemConfig = {
+  title: '公章使用登记',
+  subtitle: '中国社会科学院考古研究所东南工作队',
+  navItems: [
+    { href: '/seals', label: '用章记录', icon: '🪪' },
+  ],
+  backHref: '/',
+  backLabel: '返回主页',
+};
+
 function getConfig(pathname: string): SubSystemConfig | undefined {
   if (pathname === '/login' || pathname === '/') return undefined;
 
@@ -61,6 +91,18 @@ function getConfig(pathname: string): SubSystemConfig | undefined {
 
   if (pathname.startsWith('/accounting')) {
     return accountingConfig;
+  }
+
+  if (pathname.startsWith('/vehicles')) {
+    return vehicleConfig;
+  }
+
+  if (pathname.startsWith('/assets')) {
+    return assetsConfig;
+  }
+
+  if (pathname.startsWith('/seals')) {
+    return sealConfig;
   }
 
   return undefined;

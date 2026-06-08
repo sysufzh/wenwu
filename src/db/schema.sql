@@ -118,3 +118,47 @@ CREATE TABLE IF NOT EXISTS transaction_categories (
 
 CREATE INDEX IF NOT EXISTS idx_transactions_type ON transactions(type);
 CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(transaction_date);
+
+-- 田野用车使用登记
+CREATE TABLE IF NOT EXISTS vehicle_usage (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  usage_date TEXT NOT NULL DEFAULT '',
+  usage_time TEXT DEFAULT '',
+  license_plate TEXT NOT NULL DEFAULT '',
+  user_name TEXT DEFAULT '',
+  purpose TEXT DEFAULT '',
+  remarks TEXT DEFAULT '',
+  created_at DATETIME DEFAULT (datetime('now','localtime')),
+  updated_at DATETIME DEFAULT (datetime('now','localtime'))
+);
+
+-- 固定资产登记
+CREATE TABLE IF NOT EXISTS fixed_assets (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  asset_number TEXT NOT NULL DEFAULT '',
+  asset_name TEXT NOT NULL,
+  quantity INTEGER DEFAULT 1,
+  brand TEXT DEFAULT '',
+  model_spec TEXT DEFAULT '',
+  production_date TEXT DEFAULT '',
+  entry_date TEXT DEFAULT '',
+  original_value REAL DEFAULT 0,
+  user_name TEXT DEFAULT '',
+  department TEXT DEFAULT '',
+  location TEXT DEFAULT '',
+  remarks TEXT DEFAULT '',
+  created_at DATETIME DEFAULT (datetime('now','localtime')),
+  updated_at DATETIME DEFAULT (datetime('now','localtime'))
+);
+
+-- 公章使用登记
+CREATE TABLE IF NOT EXISTS seal_usage (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  usage_date TEXT NOT NULL DEFAULT '',
+  purpose TEXT DEFAULT '',
+  seal_count INTEGER DEFAULT 1,
+  user_name TEXT DEFAULT '',
+  remarks TEXT DEFAULT '',
+  created_at DATETIME DEFAULT (datetime('now','localtime')),
+  updated_at DATETIME DEFAULT (datetime('now','localtime'))
+);

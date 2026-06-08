@@ -75,6 +75,39 @@ export default function HomePage() {
               <div className="text-sm text-stone-500 mt-0.5">收入支出记录、分类统计</div>
             </div>
           </Link>
+
+          <Link
+            href="/vehicles"
+            className="flex items-center gap-5 bg-white rounded-xl shadow-sm border border-stone-200 p-6 hover:border-amber-400 hover:shadow-md transition-all"
+          >
+            <div className="text-4xl">🚗</div>
+            <div>
+              <div className="text-lg font-bold text-stone-800">田野用车使用登记</div>
+              <div className="text-sm text-stone-500 mt-0.5">车辆使用时间、车牌、使用人、事项</div>
+            </div>
+          </Link>
+
+          <Link
+            href="/assets"
+            className="flex items-center gap-5 bg-white rounded-xl shadow-sm border border-stone-200 p-6 hover:border-amber-400 hover:shadow-md transition-all"
+          >
+            <div className="text-4xl">🏢</div>
+            <div>
+              <div className="text-lg font-bold text-stone-800">固定资产登记</div>
+              <div className="text-sm text-stone-500 mt-0.5">资产编号、名称、原值、使用人、存放地点</div>
+            </div>
+          </Link>
+
+          <Link
+            href="/seals"
+            className="flex items-center gap-5 bg-white rounded-xl shadow-sm border border-stone-200 p-6 hover:border-amber-400 hover:shadow-md transition-all"
+          >
+            <div className="text-4xl">🪪</div>
+            <div>
+              <div className="text-lg font-bold text-stone-800">公章使用登记</div>
+              <div className="text-sm text-stone-500 mt-0.5">用章日期、事项、数量、盖章人</div>
+            </div>
+          </Link>
         </div>
 
         {/* Admin backup button */}
