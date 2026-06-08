@@ -21,6 +21,15 @@ export default function VehiclesPage() {
   );
 }
 
+const emptyForm = {
+  usage_date: new Date().toISOString().slice(0, 10),
+  usage_time: '',
+  license_plate: '',
+  user_name: '',
+  purpose: '',
+  remarks: '',
+};
+
 function VehiclesContent() {
   const searchParams = useSearchParams();
   const [records, setRecords] = useState<VehicleUsage[]>([]);
@@ -34,14 +43,8 @@ function VehiclesContent() {
   const [isAdmin, setIsAdmin] = useState(false);
 
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({
-    usage_date: new Date().toISOString().slice(0, 10),
-    usage_time: '',
-    license_plate: '',
-    user_name: '',
-    purpose: '',
-    remarks: '',
-  });
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -71,16 +74,38 @@ function VehiclesContent() {
     fetchRecords();
   };
 
+  const handleEdit = (r: VehicleUsage) => {
+    setEditingId(r.id);
+    setForm({
+      usage_date: r.usage_date,
+      usage_time: r.usage_time,
+      license_plate: r.license_plate,
+      user_name: r.user_name,
+      purpose: r.purpose,
+      remarks: r.remarks,
+    });
+    setShowForm(true);
+  };
+
+  const handleCancel = () => {
+    setShowForm(false);
+    setEditingId(null);
+    setForm(emptyForm);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.license_plate.trim()) { alert('车牌号不能为空'); return; }
     setSaving(true);
-    const res = await fetch('/api/vehicles', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) });
+
+    const method = editingId ? 'PUT' : 'POST';
+    const url = editingId ? `/api/vehicles/${editingId}` : '/api/vehicles';
+    const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) });
+
     if (res.ok) {
-      setShowForm(false);
-      setForm({ usage_date: new Date().toISOString().slice(0, 10), usage_time: '', license_plate: '', user_name: '', purpose: '', remarks: '' });
+      handleCancel();
       fetchRecords();
-    } else { alert((await res.json()).error || '创建失败'); }
+    } else { alert((await res.json()).error || (editingId ? '更新失败' : '创建失败')); }
     setSaving(false);
   };
 
@@ -88,11 +113,14 @@ function VehiclesContent() {
     <div className="max-w-5xl mx-auto space-y-4">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-stone-800">田野用车使用登记</h2>
-        <button onClick={() => setShowForm(!showForm)} className="bg-amber-700 text-white px-4 py-2 rounded-lg text-sm hover:bg-amber-800 transition-colors">+ 新建记录</button>
+        <button onClick={() => { setEditingId(null); setForm(emptyForm); setShowForm(!showForm); }} className="bg-amber-700 text-white px-4 py-2 rounded-lg text-sm hover:bg-amber-800 transition-colors">
+          + 新建记录
+        </button>
       </div>
 
       {showForm && (
         <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm border border-stone-200 p-5 space-y-3">
+          <div className="text-sm font-medium text-stone-700 mb-1">{editingId ? '编辑记录' : '新建记录'}</div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             <div>
               <label className="block text-xs font-medium text-stone-600 mb-1">日期 <span className="text-red-500">*</span></label>
@@ -120,8 +148,8 @@ function VehiclesContent() {
             </div>
           </div>
           <div className="flex gap-2">
-            <button type="submit" disabled={saving} className="bg-amber-700 text-white px-4 py-1.5 rounded text-sm hover:bg-amber-800 disabled:opacity-50">{saving ? '保存中…' : '保存'}</button>
-            <button type="button" onClick={() => setShowForm(false)} className="px-4 py-1.5 rounded text-sm border border-stone-300 text-stone-600 hover:bg-stone-50">取消</button>
+            <button type="submit" disabled={saving} className="bg-amber-700 text-white px-4 py-1.5 rounded text-sm hover:bg-amber-800 disabled:opacity-50">{saving ? '保存中…' : (editingId ? '确认修改' : '保存')}</button>
+            <button type="button" onClick={handleCancel} className="px-4 py-1.5 rounded text-sm border border-stone-300 text-stone-600 hover:bg-stone-50">取消</button>
           </div>
         </form>
       )}
@@ -157,7 +185,14 @@ function VehiclesContent() {
                   <td className="px-4 py-3 font-medium text-stone-800">{r.license_plate}</td>
                   <td className="px-4 py-3 text-stone-600 hidden sm:table-cell">{r.user_name || '-'}</td>
                   <td className="px-4 py-3 text-stone-600 hidden md:table-cell max-w-40 truncate">{r.purpose || '-'}</td>
-                  <td className="px-4 py-3 text-right">{isAdmin && <button onClick={() => handleDelete(r.id)} className="text-xs px-2 py-1 rounded bg-red-50 text-red-700 hover:bg-red-100">删除</button>}</td>
+                  <td className="px-4 py-3 text-right">
+                    {isAdmin && (
+                      <div className="flex items-center justify-end gap-1">
+                        <button onClick={() => handleEdit(r)} className="text-xs px-2 py-1 rounded bg-stone-100 text-stone-700 hover:bg-stone-200">编辑</button>
+                        <button onClick={() => handleDelete(r.id)} className="text-xs px-2 py-1 rounded bg-red-50 text-red-700 hover:bg-red-100">删除</button>
+                      </div>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
