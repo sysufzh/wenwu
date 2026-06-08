@@ -7,6 +7,7 @@ interface Tool {
   id: number;
   tool_name: string;
   category: string;
+  unit: string;
   quantity: number;
   warehouse_location: string;
   status: string;
@@ -53,6 +54,10 @@ export default function ToolDetailPage({ params }: { params: Promise<{ id: strin
           <div>
             <dt className="text-stone-500">数量</dt>
             <dd className="font-medium text-stone-800 mt-0.5">{tool.quantity}</dd>
+          </div>
+          <div>
+            <dt className="text-stone-500">单位</dt>
+            <dd className="font-medium text-stone-800 mt-0.5">{tool.unit || '件'}</dd>
           </div>
           <div>
             <dt className="text-stone-500">存放位置</dt>

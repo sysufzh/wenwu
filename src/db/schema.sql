@@ -55,6 +55,7 @@ CREATE TABLE IF NOT EXISTS tools (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   tool_name TEXT NOT NULL,
   category TEXT DEFAULT '',
+  unit TEXT DEFAULT '件',
   quantity INTEGER DEFAULT 1,
   warehouse_location TEXT DEFAULT '',
   status TEXT DEFAULT '在库' CHECK(status IN ('在库','出库')),

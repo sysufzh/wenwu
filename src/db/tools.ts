@@ -4,6 +4,7 @@ export interface Tool {
   id: number;
   tool_name: string;
   category: string;
+  unit: string;
   quantity: number;
   warehouse_location: string;
   status: '在库' | '出库';
@@ -17,6 +18,7 @@ export interface Tool {
 export interface ToolCreateInput {
   tool_name: string;
   category?: string;
+  unit?: string;
   quantity?: number;
   warehouse_location?: string;
   responsible_person?: string;
@@ -78,12 +80,13 @@ export function createTool(input: ToolCreateInput): Tool {
   const db = getDb();
   const now = new Date().toISOString();
   const stmt = db.prepare(
-    `INSERT INTO tools (tool_name, category, quantity, warehouse_location, responsible_person, purchase_date, remarks, created_at, updated_at)
-     VALUES (@tool_name, @category, @quantity, @warehouse_location, @responsible_person, @purchase_date, @remarks, @created_at, @updated_at)`
+    `INSERT INTO tools (tool_name, category, unit, quantity, warehouse_location, responsible_person, purchase_date, remarks, created_at, updated_at)
+     VALUES (@tool_name, @category, @unit, @quantity, @warehouse_location, @responsible_person, @purchase_date, @remarks, @created_at, @updated_at)`
   );
   const result = stmt.run({
     tool_name: input.tool_name,
     category: input.category || '',
+    unit: input.unit || '件',
     quantity: input.quantity ?? 1,
     warehouse_location: input.warehouse_location || '',
     responsible_person: input.responsible_person || '',
@@ -105,6 +108,7 @@ export function updateTool(id: number, input: ToolUpdateInput): Tool | undefined
     `UPDATE tools SET
       tool_name = @tool_name,
       category = @category,
+      unit = @unit,
       quantity = @quantity,
       warehouse_location = @warehouse_location,
       responsible_person = @responsible_person,
@@ -117,6 +121,7 @@ export function updateTool(id: number, input: ToolUpdateInput): Tool | undefined
     id,
     tool_name: input.tool_name ?? existing.tool_name,
     category: input.category ?? existing.category,
+    unit: input.unit ?? existing.unit,
     quantity: input.quantity ?? existing.quantity,
     warehouse_location: input.warehouse_location ?? existing.warehouse_location,
     responsible_person: input.responsible_person ?? existing.responsible_person,

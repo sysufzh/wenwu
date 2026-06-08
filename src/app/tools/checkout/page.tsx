@@ -7,6 +7,7 @@ interface Tool {
   id: number;
   tool_name: string;
   category: string;
+  unit: string;
   quantity: number;
   warehouse_location: string;
   status: string;
@@ -84,7 +85,7 @@ export default function ToolCheckoutPage() {
                   <input type="radio" name="tool" checked={selectedId === tool.id} onChange={() => setSelectedId(tool.id)} className="accent-amber-700" />
                   <div className="flex-1 min-w-0">
                     <div className="font-medium text-stone-800 truncate">{tool.tool_name}</div>
-                    <div className="text-xs text-stone-500">{tool.category && `${tool.category} · `}数量 {tool.quantity} {tool.warehouse_location && `· ${tool.warehouse_location}`}</div>
+                    <div className="text-xs text-stone-500">{tool.category && `${tool.category} · `}数量 {tool.quantity}{tool.unit || '件'} {tool.warehouse_location && `· ${tool.warehouse_location}`}</div>
                   </div>
                 </label>
               ))

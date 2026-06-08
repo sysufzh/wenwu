@@ -8,6 +8,7 @@ interface Tool {
   id: number;
   tool_name: string;
   category: string;
+  unit: string;
   quantity: number;
   warehouse_location: string;
   status: string;
@@ -107,6 +108,7 @@ function ToolsContent() {
                 <th className="text-left px-4 py-3 font-medium text-stone-600 whitespace-nowrap">工具名称</th>
                 <th className="text-left px-4 py-3 font-medium text-stone-600 whitespace-nowrap hidden sm:table-cell">类别</th>
                 <th className="text-center px-4 py-3 font-medium text-stone-600 whitespace-nowrap hidden md:table-cell">数量</th>
+                <th className="text-center px-4 py-3 font-medium text-stone-600 whitespace-nowrap hidden lg:table-cell">单位</th>
                 <th className="text-left px-4 py-3 font-medium text-stone-600 whitespace-nowrap hidden md:table-cell">存放位置</th>
                 <th className="text-left px-4 py-3 font-medium text-stone-600 whitespace-nowrap hidden sm:table-cell">责任人</th>
                 <th className="text-center px-4 py-3 font-medium text-stone-600 whitespace-nowrap">状态</th>
@@ -115,9 +117,9 @@ function ToolsContent() {
             </thead>
             <tbody className="divide-y divide-stone-100">
               {loading ? (
-                <tr><td colSpan={7} className="px-4 py-12 text-center text-stone-400">加载中…</td></tr>
+                <tr><td colSpan={8} className="px-4 py-12 text-center text-stone-400">加载中…</td></tr>
               ) : tools.length === 0 ? (
-                <tr><td colSpan={7} className="px-4 py-12 text-center text-stone-400">暂无工具记录，请先新建工具</td></tr>
+                <tr><td colSpan={8} className="px-4 py-12 text-center text-stone-400">暂无工具记录，请先新建工具</td></tr>
               ) : (
                 tools.map(tool => (
                   <tr key={tool.id} className="hover:bg-stone-50 transition-colors">
@@ -129,6 +131,7 @@ function ToolsContent() {
                     </td>
                     <td className="px-4 py-3 text-stone-600 hidden sm:table-cell">{tool.category || '-'}</td>
                     <td className="px-4 py-3 text-stone-600 text-center hidden md:table-cell">{tool.quantity}</td>
+                    <td className="px-4 py-3 text-stone-600 text-center hidden lg:table-cell">{tool.unit || '件'}</td>
                     <td className="px-4 py-3 text-stone-600 hidden md:table-cell max-w-40 truncate">{tool.warehouse_location || '-'}</td>
                     <td className="px-4 py-3 text-stone-600 hidden sm:table-cell">{tool.responsible_person || '-'}</td>
                     <td className="px-4 py-3 text-center">

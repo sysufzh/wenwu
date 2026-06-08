@@ -10,6 +10,7 @@ export default function NewToolPage() {
   const [form, setForm] = useState({
     tool_name: '',
     category: '',
+    unit: '件',
     quantity: 1,
     warehouse_location: '',
     responsible_person: '',
@@ -71,10 +72,27 @@ export default function NewToolPage() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
+            <label className="block text-sm font-medium text-stone-700 mb-1">单位</label>
+            <input type="text" value={form.unit} onChange={e => updateField('unit', e.target.value)}
+              list="unit-options"
+              className="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" placeholder="件、把、包…" />
+            <datalist id="unit-options">
+              <option value="件" />
+              <option value="把" />
+              <option value="包" />
+              <option value="捆" />
+              <option value="箱" />
+              <option value="台" />
+            </datalist>
+          </div>
+          <div>
             <label className="block text-sm font-medium text-stone-700 mb-1">存放位置</label>
             <input type="text" value={form.warehouse_location} onChange={e => updateField('warehouse_location', e.target.value)}
               className="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
           </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-stone-700 mb-1">责任人</label>
             <input type="text" value={form.responsible_person} onChange={e => updateField('responsible_person', e.target.value)}
