@@ -37,6 +37,8 @@ function migrateSchema() {
     "ALTER TABLE transactions ADD COLUMN ledger_type TEXT DEFAULT '工作'",
     "ALTER TABLE transactions ADD COLUMN funding_source TEXT DEFAULT ''",
     "ALTER TABLE tools ADD COLUMN unit TEXT DEFAULT '件'",
+    "ALTER TABLE vehicle_usage ADD COLUMN usage_time_start TEXT DEFAULT ''",
+    "ALTER TABLE vehicle_usage ADD COLUMN usage_time_end TEXT DEFAULT ''",
   ];
   for (const sql of migrations) {
     try { db.exec(sql); } catch { /* column already exists */ }

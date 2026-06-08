@@ -3,7 +3,8 @@ import { getDb } from './index';
 export interface VehicleUsage {
   id: number;
   usage_date: string;
-  usage_time: string;
+  usage_time_start: string;
+  usage_time_end: string;
   license_plate: string;
   user_name: string;
   purpose: string;
@@ -14,7 +15,8 @@ export interface VehicleUsage {
 
 export interface VehicleUsageCreateInput {
   usage_date: string;
-  usage_time?: string;
+  usage_time_start?: string;
+  usage_time_end?: string;
   license_plate: string;
   user_name?: string;
   purpose?: string;
@@ -49,7 +51,7 @@ export function getVehicleUsages(params: VehicleUsageListParams = {}) {
   conditions['offset'] = offset;
 
   const rows = db.prepare(
-    `SELECT * FROM vehicle_usage ${where} ORDER BY usage_date DESC, usage_time DESC LIMIT @limit OFFSET @offset`
+    `SELECT * FROM vehicle_usage ${where} ORDER BY usage_date DESC, usage_time_start DESC LIMIT @limit OFFSET @offset`
   ).all(conditions) as VehicleUsage[];
 
   return { data: rows, total: countRow.total, page, limit, totalPages: Math.ceil(countRow.total / limit) };
@@ -64,11 +66,12 @@ export function createVehicleUsage(input: VehicleUsageCreateInput): VehicleUsage
   const db = getDb();
   const now = new Date().toISOString();
   const result = db.prepare(
-    `INSERT INTO vehicle_usage (usage_date, usage_time, license_plate, user_name, purpose, remarks, created_at, updated_at)
-     VALUES (@usage_date, @usage_time, @license_plate, @user_name, @purpose, @remarks, @created_at, @updated_at)`
+    `INSERT INTO vehicle_usage (usage_date, usage_time_start, usage_time_end, license_plate, user_name, purpose, remarks, created_at, updated_at)
+     VALUES (@usage_date, @usage_time_start, @usage_time_end, @license_plate, @user_name, @purpose, @remarks, @created_at, @updated_at)`
   ).run({
     usage_date: input.usage_date,
-    usage_time: input.usage_time || '',
+    usage_time_start: input.usage_time_start || '',
+    usage_time_end: input.usage_time_end || '',
     license_plate: input.license_plate,
     user_name: input.user_name || '',
     purpose: input.purpose || '',
@@ -86,11 +89,12 @@ export function updateVehicleUsage(id: number, input: Partial<VehicleUsageCreate
 
   const now = new Date().toISOString();
   db.prepare(
-    `UPDATE vehicle_usage SET usage_date=@usage_date, usage_time=@usage_time, license_plate=@license_plate, user_name=@user_name, purpose=@purpose, remarks=@remarks, updated_at=@updated_at WHERE id=@id`
+    `UPDATE vehicle_usage SET usage_date=@usage_date, usage_time_start=@usage_time_start, usage_time_end=@usage_time_end, license_plate=@license_plate, user_name=@user_name, purpose=@purpose, remarks=@remarks, updated_at=@updated_at WHERE id=@id`
   ).run({
     id,
     usage_date: input.usage_date ?? existing.usage_date,
-    usage_time: input.usage_time ?? existing.usage_time,
+    usage_time_start: input.usage_time_start ?? existing.usage_time_start,
+    usage_time_end: input.usage_time_end ?? existing.usage_time_end,
     license_plate: input.license_plate ?? existing.license_plate,
     user_name: input.user_name ?? existing.user_name,
     purpose: input.purpose ?? existing.purpose,

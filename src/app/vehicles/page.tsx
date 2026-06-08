@@ -6,7 +6,8 @@ import { useSearchParams } from 'next/navigation';
 interface VehicleUsage {
   id: number;
   usage_date: string;
-  usage_time: string;
+  usage_time_start: string;
+  usage_time_end: string;
   license_plate: string;
   user_name: string;
   purpose: string;
@@ -23,7 +24,8 @@ export default function VehiclesPage() {
 
 const emptyForm = {
   usage_date: new Date().toISOString().slice(0, 10),
-  usage_time: '',
+  usage_time_start: '',
+  usage_time_end: '',
   license_plate: '',
   user_name: '',
   purpose: '',
@@ -78,7 +80,8 @@ function VehiclesContent() {
     setEditingId(r.id);
     setForm({
       usage_date: r.usage_date,
-      usage_time: r.usage_time,
+      usage_time_start: r.usage_time_start,
+      usage_time_end: r.usage_time_end,
       license_plate: r.license_plate,
       user_name: r.user_name,
       purpose: r.purpose,
@@ -127,8 +130,12 @@ function VehiclesContent() {
               <input required type="date" value={form.usage_date} onChange={e => setForm(p => ({ ...p, usage_date: e.target.value }))} className="w-full px-2 py-1.5 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-stone-600 mb-1">时间</label>
-              <input type="time" value={form.usage_time} onChange={e => setForm(p => ({ ...p, usage_time: e.target.value }))} className="w-full px-2 py-1.5 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+              <label className="block text-xs font-medium text-stone-600 mb-1">开始时间</label>
+              <input type="time" value={form.usage_time_start} onChange={e => setForm(p => ({ ...p, usage_time_start: e.target.value }))} className="w-full px-2 py-1.5 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-stone-600 mb-1">结束时间</label>
+              <input type="time" value={form.usage_time_end} onChange={e => setForm(p => ({ ...p, usage_time_end: e.target.value }))} className="w-full px-2 py-1.5 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
             </div>
             <div>
               <label className="block text-xs font-medium text-stone-600 mb-1">车牌号 <span className="text-red-500">*</span></label>
@@ -166,7 +173,7 @@ function VehiclesContent() {
             <thead className="bg-stone-50 border-b border-stone-200">
               <tr>
                 <th className="text-left px-4 py-3 font-medium text-stone-600">日期</th>
-                <th className="text-left px-4 py-3 font-medium text-stone-600 hidden sm:table-cell">时间</th>
+                <th className="text-left px-4 py-3 font-medium text-stone-600 hidden sm:table-cell">时间段</th>
                 <th className="text-left px-4 py-3 font-medium text-stone-600">车牌号</th>
                 <th className="text-left px-4 py-3 font-medium text-stone-600 hidden sm:table-cell">使用人</th>
                 <th className="text-left px-4 py-3 font-medium text-stone-600 hidden md:table-cell">事项</th>
@@ -181,7 +188,7 @@ function VehiclesContent() {
               ) : records.map(r => (
                 <tr key={r.id} className="hover:bg-stone-50">
                   <td className="px-4 py-3 text-stone-600 whitespace-nowrap">{r.usage_date}</td>
-                  <td className="px-4 py-3 text-stone-600 hidden sm:table-cell">{r.usage_time || '-'}</td>
+                  <td className="px-4 py-3 text-stone-600 hidden sm:table-cell whitespace-nowrap">{r.usage_time_start || r.usage_time_end ? `${r.usage_time_start || '?'} — ${r.usage_time_end || '?'}` : '-'}</td>
                   <td className="px-4 py-3 font-medium text-stone-800">{r.license_plate}</td>
                   <td className="px-4 py-3 text-stone-600 hidden sm:table-cell">{r.user_name || '-'}</td>
                   <td className="px-4 py-3 text-stone-600 hidden md:table-cell max-w-40 truncate">{r.purpose || '-'}</td>

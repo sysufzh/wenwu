@@ -124,7 +124,8 @@ CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(transaction_dat
 CREATE TABLE IF NOT EXISTS vehicle_usage (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   usage_date TEXT NOT NULL DEFAULT '',
-  usage_time TEXT DEFAULT '',
+  usage_time_start TEXT DEFAULT '',
+  usage_time_end TEXT DEFAULT '',
   license_plate TEXT NOT NULL DEFAULT '',
   user_name TEXT DEFAULT '',
   purpose TEXT DEFAULT '',
