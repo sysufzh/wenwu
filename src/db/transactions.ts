@@ -12,6 +12,7 @@ export interface Transaction {
   remarks: string;
   ledger_type: '生活' | '工作';
   funding_source: string;
+  reimbursement_status: string;
   created_at: string;
   updated_at: string;
 }
@@ -27,6 +28,7 @@ export interface TransactionCreateInput {
   remarks?: string;
   ledger_type?: '生活' | '工作';
   funding_source?: string;
+  reimbursement_status?: string;
 }
 
 export interface TransactionUpdateInput extends Partial<TransactionCreateInput> {}
@@ -107,8 +109,8 @@ export function createTransaction(input: TransactionCreateInput): Transaction {
   const db = getDb();
   const now = new Date().toISOString();
   const stmt = db.prepare(
-    `INSERT INTO transactions (transaction_date, type, category, amount, description, payment_method, handler, remarks, ledger_type, funding_source, created_at, updated_at)
-     VALUES (@transaction_date, @type, @category, @amount, @description, @payment_method, @handler, @remarks, @ledger_type, @funding_source, @created_at, @updated_at)`
+    `INSERT INTO transactions (transaction_date, type, category, amount, description, payment_method, handler, remarks, ledger_type, funding_source, reimbursement_status, created_at, updated_at)
+     VALUES (@transaction_date, @type, @category, @amount, @description, @payment_method, @handler, @remarks, @ledger_type, @funding_source, @reimbursement_status, @created_at, @updated_at)`
   );
   const result = stmt.run({
     transaction_date: input.transaction_date || '',
@@ -121,6 +123,7 @@ export function createTransaction(input: TransactionCreateInput): Transaction {
     remarks: input.remarks || '',
     ledger_type: input.ledger_type || '工作',
     funding_source: input.funding_source || '',
+    reimbursement_status: input.reimbursement_status || '未报销',
     created_at: now,
     updated_at: now,
   });
@@ -145,6 +148,7 @@ export function updateTransaction(id: number, input: TransactionUpdateInput): Tr
       remarks = @remarks,
       ledger_type = @ledger_type,
       funding_source = @funding_source,
+      reimbursement_status = @reimbursement_status,
       updated_at = @updated_at
     WHERE id = @id`
   );
@@ -160,6 +164,7 @@ export function updateTransaction(id: number, input: TransactionUpdateInput): Tr
     remarks: input.remarks ?? existing.remarks,
     ledger_type: input.ledger_type ?? existing.ledger_type,
     funding_source: input.funding_source ?? existing.funding_source,
+    reimbursement_status: input.reimbursement_status ?? existing.reimbursement_status,
     updated_at: now,
   });
   return getTransactionById(id);

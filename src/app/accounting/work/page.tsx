@@ -11,6 +11,7 @@ interface Transaction {
   amount: number;
   description: string;
   funding_source: string;
+  reimbursement_status: string;
   handler: string;
   remarks: string;
 }
@@ -54,6 +55,7 @@ function WorkLedgerContent() {
     amount: '',
     description: '',
     funding_source: '',
+    reimbursement_status: '未报销',
     handler: '',
     remarks: '',
   });
@@ -103,6 +105,16 @@ function WorkLedgerContent() {
     if (res.ok) fetchData();
   };
 
+  const toggleReimbursement = async (tx: Transaction) => {
+    const newStatus = tx.reimbursement_status === '已报销' ? '未报销' : '已报销';
+    await fetch(`/api/transactions/${tx.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reimbursement_status: newStatus }),
+    });
+    fetchData();
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.amount || parseFloat(form.amount) <= 0) { alert('金额必须大于0'); return; }
@@ -114,7 +126,7 @@ function WorkLedgerContent() {
     });
     if (res.ok) {
       setShowForm(false);
-      setForm({ transaction_date: new Date().toISOString().slice(0, 10), type: '支出', category: '', amount: '', description: '', funding_source: '', handler: '', remarks: '' });
+      setForm({ transaction_date: new Date().toISOString().slice(0, 10), type: '支出', category: '', amount: '', description: '', funding_source: '', reimbursement_status: '未报销', handler: '', remarks: '' });
       fetchData();
     } else {
       const data = await res.json();
@@ -232,6 +244,14 @@ function WorkLedgerContent() {
                 className="w-full px-2 py-1.5 border border-stone-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" placeholder="如项目经费、所拨经费等" />
             </div>
             <div>
+              <label className="block text-xs font-medium text-stone-600 mb-1">报销状态</label>
+              <select value={form.reimbursement_status} onChange={e => setForm(p => ({ ...p, reimbursement_status: e.target.value }))}
+                className="w-full px-2 py-1.5 border border-stone-300 rounded text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-500">
+                <option value="未报销">未报销</option>
+                <option value="已报销">已报销</option>
+              </select>
+            </div>
+            <div>
               <label className="block text-xs font-medium text-stone-600 mb-1">经办人</label>
               <input type="text" value={form.handler} onChange={e => setForm(p => ({ ...p, handler: e.target.value }))}
                 className="w-full px-2 py-1.5 border border-stone-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
@@ -282,15 +302,16 @@ function WorkLedgerContent() {
                 <th className="text-left px-4 py-3 font-medium text-stone-600 hidden sm:table-cell">类别</th>
                 <th className="text-right px-4 py-3 font-medium text-stone-600">金额</th>
                 <th className="text-left px-4 py-3 font-medium text-stone-600 hidden lg:table-cell">经费来源</th>
+                <th className="text-center px-4 py-3 font-medium text-stone-600">报销</th>
                 <th className="text-left px-4 py-3 font-medium text-stone-600 hidden md:table-cell">摘要</th>
                 <th className="text-right px-4 py-3 font-medium text-stone-600">操作</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-100">
               {loading ? (
-                <tr><td colSpan={7} className="px-4 py-12 text-center text-stone-400">加载中…</td></tr>
+                <tr><td colSpan={8} className="px-4 py-12 text-center text-stone-400">加载中…</td></tr>
               ) : transactions.length === 0 ? (
-                <tr><td colSpan={7} className="px-4 py-12 text-center text-stone-400">暂无记录</td></tr>
+                <tr><td colSpan={8} className="px-4 py-12 text-center text-stone-400">暂无记录</td></tr>
               ) : (
                 transactions.map(tx => (
                   <tr key={tx.id} className="hover:bg-stone-50 transition-colors">
@@ -303,6 +324,12 @@ function WorkLedgerContent() {
                       {tx.type === '收入' ? '+' : '-'}{tx.amount.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
                     </td>
                     <td className="px-4 py-3 text-stone-600 hidden lg:table-cell">{tx.funding_source || '-'}</td>
+                    <td className="px-4 py-3 text-center">
+                      <button onClick={() => toggleReimbursement(tx)}
+                        className={`text-xs px-2 py-0.5 rounded-full font-medium cursor-pointer ${tx.reimbursement_status === '已报销' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'}`}>
+                        {tx.reimbursement_status || '未报销'}
+                      </button>
+                    </td>
                     <td className="px-4 py-3 text-stone-600 hidden md:table-cell max-w-40 truncate">
                       {tx.description || '-'}
                       {tx.handler && <span className="text-xs text-stone-400 ml-1">({tx.handler})</span>}

@@ -39,6 +39,7 @@ function migrateSchema() {
     "ALTER TABLE tools ADD COLUMN unit TEXT DEFAULT '件'",
     "ALTER TABLE vehicle_usage ADD COLUMN usage_time_start TEXT DEFAULT ''",
     "ALTER TABLE vehicle_usage ADD COLUMN usage_time_end TEXT DEFAULT ''",
+    "ALTER TABLE transactions ADD COLUMN reimbursement_status TEXT DEFAULT '未报销'",
   ];
   for (const sql of migrations) {
     try { db.exec(sql); } catch { /* column already exists */ }

@@ -106,6 +106,7 @@ CREATE TABLE IF NOT EXISTS transactions (
   remarks TEXT DEFAULT '',
   ledger_type TEXT DEFAULT '工作' CHECK(ledger_type IN ('生活','工作')),
   funding_source TEXT DEFAULT '',
+  reimbursement_status TEXT DEFAULT '未报销' CHECK(reimbursement_status IN ('已报销','未报销')),
   created_at DATETIME DEFAULT (datetime('now','localtime')),
   updated_at DATETIME DEFAULT (datetime('now','localtime'))
 );
