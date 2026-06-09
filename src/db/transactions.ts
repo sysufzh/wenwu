@@ -207,6 +207,40 @@ export function getCategories(): { id: number; name: string; type: string; sort_
   return db.prepare('SELECT * FROM transaction_categories ORDER BY type, sort_order, id').all() as any[];
 }
 
+export function getDistinctFieldValues(ledgerType?: '生活' | '工作') {
+  const db = getDb();
+  let filter = 'WHERE 1=1';
+  const params: Record<string, string> = {};
+  if (ledgerType) {
+    filter += ' AND ledger_type = @ledgerType';
+    params['ledgerType'] = ledgerType;
+  }
+
+  const fundingSources = db.prepare(
+    `SELECT DISTINCT funding_source FROM transactions ${filter} AND funding_source != '' ORDER BY funding_source`
+  ).all(params) as { funding_source: string }[];
+
+  const handlers = db.prepare(
+    `SELECT DISTINCT handler FROM transactions ${filter} AND handler != '' ORDER BY handler`
+  ).all(params) as { handler: string }[];
+
+  const categories = db.prepare(
+    `SELECT DISTINCT category FROM transactions ${filter} AND category != '' ORDER BY category`
+  ).all(params) as { category: string }[];
+
+  const last = db.prepare(
+    `SELECT funding_source, handler FROM transactions ${filter} ORDER BY id DESC LIMIT 1`
+  ).get(params) as { funding_source: string; handler: string } | undefined;
+
+  return {
+    fundingSources: fundingSources.map(r => r.funding_source),
+    handlers: handlers.map(r => r.handler),
+    categories: categories.map(r => r.category),
+    lastFundingSource: last?.funding_source || '',
+    lastHandler: last?.handler || '',
+  };
+}
+
 export function seedTransactionCategories() {
   const db = getDb();
   const count = db.prepare('SELECT COUNT(*) as c FROM transaction_categories').get() as { c: number };

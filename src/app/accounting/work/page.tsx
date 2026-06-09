@@ -23,6 +23,47 @@ interface Stats {
   categoryBreakdown: { category: string; type: string; total: number }[];
 }
 
+interface FieldValues {
+  fundingSources: string[];
+  handlers: string[];
+  categories: string[];
+  lastFundingSource: string;
+  lastHandler: string;
+}
+
+const LS_KEY = 'work_form_last';
+
+function loadLastForm() {
+  if (typeof window === 'undefined') return {};
+  try {
+    const saved = localStorage.getItem(LS_KEY);
+    return saved ? JSON.parse(saved) : {};
+  } catch { return {}; }
+}
+
+function saveLastForm(form: Record<string, unknown>) {
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify({
+      category: form.category,
+      funding_source: form.funding_source,
+      handler: form.handler,
+      description: form.description,
+    }));
+  } catch { /* ignore */ }
+}
+
+const emptyForm = {
+  transaction_date: new Date().toISOString().slice(0, 10),
+  type: '支出' as '收入' | '支出',
+  category: '',
+  amount: '',
+  description: '',
+  funding_source: '',
+  reimbursement_status: '未报销',
+  handler: '',
+  remarks: '',
+};
+
 export default function WorkLedgerPage() {
   return (
     <Suspense fallback={<div className="text-center py-12 text-stone-400">加载中…</div>}>
@@ -45,30 +86,27 @@ function WorkLedgerContent() {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [showStats, setShowStats] = useState(false);
+  const [fieldValues, setFieldValues] = useState<FieldValues>({ fundingSources: [], handlers: [], categories: [], lastFundingSource: '', lastHandler: '' });
 
-  // New record form
+  // Form
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({
-    transaction_date: new Date().toISOString().slice(0, 10),
-    type: '支出' as '收入' | '支出',
-    category: '',
-    amount: '',
-    description: '',
-    funding_source: '',
-    reimbursement_status: '未报销',
-    handler: '',
-    remarks: '',
-  });
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
 
   const expenseCategories = ['办公费', '设备购置', '耗材费', '差旅费', '劳务费', '维修费', '运输费', '其他支出'];
   const incomeCategories = ['项目经费', '所拨经费', '其他收入'];
-  const currentCategories = form.type === '支出' ? expenseCategories : incomeCategories;
+  const defaultCategories = form.type === '支出' ? expenseCategories : incomeCategories;
+  // Merge default categories with previously used custom categories
+  const allCategories = Array.from(new Set([...defaultCategories, ...fieldValues.categories]));
 
   useEffect(() => {
     fetch('/api/auth/me').then(r => r.json()).then(data => {
       if (data.role === 'admin') setIsAdmin(true);
     });
+    fetch('/api/transactions/field-values?ledgerType=工作')
+      .then(r => r.json())
+      .then(data => setFieldValues(data));
   }, []);
 
   const fetchData = useCallback(async () => {
@@ -102,7 +140,7 @@ function WorkLedgerContent() {
   const handleDelete = async (id: number) => {
     if (!confirm('确定要删除此记录吗？')) return;
     const res = await fetch(`/api/transactions/${id}`, { method: 'DELETE' });
-    if (res.ok) fetchData();
+    if (res.ok) { fetchData(); refetchFieldValues(); }
   };
 
   const toggleReimbursement = async (tx: Transaction) => {
@@ -115,22 +153,72 @@ function WorkLedgerContent() {
     fetchData();
   };
 
+  const refetchFieldValues = () => {
+    fetch('/api/transactions/field-values?ledgerType=工作')
+      .then(r => r.json())
+      .then(data => setFieldValues(data));
+  };
+
+  const handleEdit = (tx: Transaction) => {
+    setEditingId(tx.id);
+    setForm({
+      transaction_date: tx.transaction_date,
+      type: tx.type as '收入' | '支出',
+      category: tx.category,
+      amount: String(tx.amount),
+      description: tx.description,
+      funding_source: tx.funding_source,
+      reimbursement_status: tx.reimbursement_status || '未报销',
+      handler: tx.handler,
+      remarks: tx.remarks,
+    });
+    setShowForm(true);
+  };
+
+  const handleCancel = () => {
+    setShowForm(false);
+    setEditingId(null);
+    const last = loadLastForm();
+    setForm({
+      ...emptyForm,
+      transaction_date: new Date().toISOString().slice(0, 10),
+      ...last,
+      funding_source: last.funding_source || fieldValues.lastFundingSource || '',
+      handler: last.handler || fieldValues.lastHandler || '',
+    });
+  };
+
+  const handleNewForm = () => {
+    setEditingId(null);
+    const last = loadLastForm();
+    setForm({
+      ...emptyForm,
+      transaction_date: new Date().toISOString().slice(0, 10),
+      ...last,
+      funding_source: last.funding_source || fieldValues.lastFundingSource || '',
+      handler: last.handler || fieldValues.lastHandler || '',
+    });
+    setShowForm(!showForm);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.amount || parseFloat(form.amount) <= 0) { alert('金额必须大于0'); return; }
     setSaving(true);
-    const res = await fetch('/api/transactions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...form, amount: parseFloat(form.amount), ledger_type: '工作' }),
-    });
+
+    const method = editingId ? 'PUT' : 'POST';
+    const url = editingId ? `/api/transactions/${editingId}` : '/api/transactions';
+    const body = { ...form, amount: parseFloat(form.amount), ledger_type: '工作' };
+    const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+
     if (res.ok) {
-      setShowForm(false);
-      setForm({ transaction_date: new Date().toISOString().slice(0, 10), type: '支出', category: '', amount: '', description: '', funding_source: '', reimbursement_status: '未报销', handler: '', remarks: '' });
+      saveLastForm(form);
+      handleCancel();
       fetchData();
+      refetchFieldValues();
     } else {
       const data = await res.json();
-      alert(data.error || '创建失败');
+      alert(data.error || (editingId ? '更新失败' : '创建失败'));
     }
     setSaving(false);
   };
@@ -146,7 +234,7 @@ function WorkLedgerContent() {
             className="px-3 py-2 rounded-lg text-sm border border-stone-300 text-stone-600 hover:bg-stone-100 transition-colors">
             {showStats ? '隐藏统计' : '查看统计'}
           </button>
-          <button onClick={() => setShowForm(!showForm)}
+          <button onClick={handleNewForm}
             className="inline-flex items-center justify-center gap-1 bg-amber-700 text-white px-4 py-2 rounded-lg text-sm hover:bg-amber-800 transition-colors self-start">
             + 新建记录
           </button>
@@ -207,9 +295,10 @@ function WorkLedgerContent() {
         </div>
       )}
 
-      {/* New record form */}
+      {/* New/Edit form */}
       {showForm && (
         <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm border border-stone-200 p-5 space-y-3">
+          <div className="text-sm font-medium text-stone-700 mb-1">{editingId ? '编辑记录' : '新建记录'}</div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             <div>
               <label className="block text-xs font-medium text-stone-600 mb-1">日期 <span className="text-red-500">*</span></label>
@@ -231,17 +320,23 @@ function WorkLedgerContent() {
             </div>
             <div>
               <label className="block text-xs font-medium text-stone-600 mb-1">类别</label>
-              <div className="flex flex-wrap gap-1">
-                {currentCategories.map(c => (
+              <div className="flex flex-wrap gap-1 mb-1">
+                {allCategories.map(c => (
                   <button type="button" key={c} onClick={() => setForm(p => ({ ...p, category: c }))}
                     className={`px-2 py-0.5 rounded text-xs border ${form.category === c ? 'bg-amber-700 text-white border-amber-700' : 'border-stone-300 text-stone-600 hover:bg-stone-50'}`}>{c}</button>
                 ))}
               </div>
+              <input type="text" value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))}
+                className="w-full px-2 py-1.5 border border-stone-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" placeholder="或手动输入新类别" />
             </div>
             <div>
               <label className="block text-xs font-medium text-stone-600 mb-1">经费来源</label>
               <input type="text" value={form.funding_source} onChange={e => setForm(p => ({ ...p, funding_source: e.target.value }))}
+                list="funding-options"
                 className="w-full px-2 py-1.5 border border-stone-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" placeholder="如项目经费、所拨经费等" />
+              <datalist id="funding-options">
+                {fieldValues.fundingSources.map(s => <option key={s} value={s} />)}
+              </datalist>
             </div>
             <div>
               <label className="block text-xs font-medium text-stone-600 mb-1">报销状态</label>
@@ -254,7 +349,11 @@ function WorkLedgerContent() {
             <div>
               <label className="block text-xs font-medium text-stone-600 mb-1">经办人</label>
               <input type="text" value={form.handler} onChange={e => setForm(p => ({ ...p, handler: e.target.value }))}
+                list="handler-options"
                 className="w-full px-2 py-1.5 border border-stone-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+              <datalist id="handler-options">
+                {fieldValues.handlers.map(s => <option key={s} value={s} />)}
+              </datalist>
             </div>
           </div>
           <div>
@@ -265,9 +364,9 @@ function WorkLedgerContent() {
           <div className="flex gap-2">
             <button type="submit" disabled={saving}
               className="bg-amber-700 text-white px-4 py-1.5 rounded text-sm hover:bg-amber-800 disabled:opacity-50 transition-colors">
-              {saving ? '保存中…' : '保存'}
+              {saving ? '保存中…' : (editingId ? '确认修改' : '保存')}
             </button>
-            <button type="button" onClick={() => setShowForm(false)}
+            <button type="button" onClick={handleCancel}
               className="px-4 py-1.5 rounded text-sm border border-stone-300 text-stone-600 hover:bg-stone-50">
               取消
             </button>
@@ -325,17 +424,28 @@ function WorkLedgerContent() {
                     </td>
                     <td className="px-4 py-3 text-stone-600 hidden lg:table-cell">{tx.funding_source || '-'}</td>
                     <td className="px-4 py-3 text-center">
-                      <button onClick={() => toggleReimbursement(tx)}
-                        className={`text-xs px-2 py-0.5 rounded-full font-medium cursor-pointer ${tx.reimbursement_status === '已报销' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'}`}>
-                        {tx.reimbursement_status || '未报销'}
-                      </button>
+                      {isAdmin ? (
+                        <button onClick={() => toggleReimbursement(tx)}
+                          className={`text-xs px-2 py-0.5 rounded-full font-medium cursor-pointer ${tx.reimbursement_status === '已报销' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'}`}>
+                          {tx.reimbursement_status || '未报销'}
+                        </button>
+                      ) : (
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${tx.reimbursement_status === '已报销' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'}`}>
+                          {tx.reimbursement_status || '未报销'}
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-stone-600 hidden md:table-cell max-w-40 truncate">
                       {tx.description || '-'}
                       {tx.handler && <span className="text-xs text-stone-400 ml-1">({tx.handler})</span>}
                     </td>
                     <td className="px-4 py-3 text-right">
-                      {isAdmin && <button onClick={() => handleDelete(tx.id)} className="text-xs px-2 py-1 rounded bg-red-50 text-red-700 hover:bg-red-100">删除</button>}
+                      {isAdmin && (
+                        <div className="flex items-center justify-end gap-1">
+                          <button onClick={() => handleEdit(tx)} className="text-xs px-2 py-1 rounded bg-stone-100 text-stone-700 hover:bg-stone-200">编辑</button>
+                          <button onClick={() => handleDelete(tx.id)} className="text-xs px-2 py-1 rounded bg-red-50 text-red-700 hover:bg-red-100">删除</button>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))

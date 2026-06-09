@@ -20,6 +20,36 @@ interface Stats {
   balance: number;
 }
 
+const LS_KEY = 'living_form_last';
+
+function loadLastForm() {
+  if (typeof window === 'undefined') return {};
+  try {
+    const saved = localStorage.getItem(LS_KEY);
+    return saved ? JSON.parse(saved) : {};
+  } catch { return {}; }
+}
+
+function saveLastForm(form: Record<string, unknown>) {
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify({
+      category: form.category,
+      handler: form.handler,
+      description: form.description,
+    }));
+  } catch { /* ignore */ }
+}
+
+const emptyForm = {
+  transaction_date: new Date().toISOString().slice(0, 10),
+  type: '支出' as '收入' | '支出',
+  category: '伙食费',
+  amount: '',
+  description: '',
+  handler: '',
+  remarks: '',
+};
+
 export default function LivingLedgerPage() {
   return (
     <Suspense fallback={<div className="text-center py-12 text-stone-400">加载中…</div>}>
@@ -40,17 +70,9 @@ function LivingLedgerContent() {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
 
-  // New record form
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({
-    transaction_date: new Date().toISOString().slice(0, 10),
-    type: '支出' as '收入' | '支出',
-    category: '伙食费',
-    amount: '',
-    description: '',
-    handler: '',
-    remarks: '',
-  });
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -91,23 +113,50 @@ function LivingLedgerContent() {
     if (res.ok) fetchData();
   };
 
+  const handleEdit = (tx: Transaction) => {
+    setEditingId(tx.id);
+    setForm({
+      transaction_date: tx.transaction_date,
+      type: tx.type as '收入' | '支出',
+      category: tx.category,
+      amount: String(tx.amount),
+      description: tx.description,
+      handler: tx.handler,
+      remarks: tx.remarks,
+    });
+    setShowForm(true);
+  };
+
+  const handleCancel = () => {
+    setShowForm(false);
+    setEditingId(null);
+    setForm({ ...emptyForm, transaction_date: new Date().toISOString().slice(0, 10), ...loadLastForm() });
+  };
+
+  const handleNewForm = () => {
+    setEditingId(null);
+    const last = loadLastForm();
+    setForm({ ...emptyForm, transaction_date: new Date().toISOString().slice(0, 10), ...last });
+    setShowForm(!showForm);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.amount || parseFloat(form.amount) <= 0) { alert('金额必须大于0'); return; }
     setSaving(true);
-    const res = await fetch('/api/transactions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...form, amount: parseFloat(form.amount), ledger_type: '生活' }),
-    });
+
+    const method = editingId ? 'PUT' : 'POST';
+    const url = editingId ? `/api/transactions/${editingId}` : '/api/transactions';
+    const body = { ...form, amount: parseFloat(form.amount), ledger_type: '生活' };
+    const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+
     if (res.ok) {
-      setShowForm(false);
-      setForm({ transaction_date: new Date().toISOString().slice(0, 10), type: '支出', category: '伙食费', amount: '', description: '', handler: '', remarks: '' });
+      saveLastForm(form);
+      handleCancel();
       fetchData();
-      setTimeout(() => {}, 3000);
     } else {
       const data = await res.json();
-      alert(data.error || '创建失败');
+      alert(data.error || (editingId ? '更新失败' : '创建失败'));
     }
     setSaving(false);
   };
@@ -118,7 +167,7 @@ function LivingLedgerContent() {
     <div className="max-w-5xl mx-auto space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <h2 className="text-2xl font-bold text-stone-800">生活账本</h2>
-        <button onClick={() => setShowForm(!showForm)}
+        <button onClick={handleNewForm}
           className="inline-flex items-center justify-center gap-1 bg-amber-700 text-white px-4 py-2 rounded-lg text-sm hover:bg-amber-800 transition-colors self-start">
           + 新建记录
         </button>
@@ -142,9 +191,10 @@ function LivingLedgerContent() {
         </div>
       </div>
 
-      {/* New record form */}
+      {/* New/Edit form */}
       {showForm && (
         <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm border border-stone-200 p-5 space-y-3">
+          <div className="text-sm font-medium text-stone-700 mb-1">{editingId ? '编辑记录' : '新建记录'}</div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div>
               <label className="block text-xs font-medium text-stone-600 mb-1">日期</label>
@@ -178,9 +228,9 @@ function LivingLedgerContent() {
           <div className="flex gap-2">
             <button type="submit" disabled={saving}
               className="bg-amber-700 text-white px-4 py-1.5 rounded text-sm hover:bg-amber-800 disabled:opacity-50 transition-colors">
-              {saving ? '保存中…' : '保存'}
+              {saving ? '保存中…' : (editingId ? '确认修改' : '保存')}
             </button>
-            <button type="button" onClick={() => setShowForm(false)}
+            <button type="button" onClick={handleCancel}
               className="px-4 py-1.5 rounded text-sm border border-stone-300 text-stone-600 hover:bg-stone-50">
               取消
             </button>
@@ -228,7 +278,12 @@ function LivingLedgerContent() {
                     <td className="px-4 py-3 text-stone-600 hidden md:table-cell">{tx.description || '-'}</td>
                     <td className="px-4 py-3 text-stone-600 hidden sm:table-cell">{tx.handler || '-'}</td>
                     <td className="px-4 py-3 text-right">
-                      {isAdmin && <button onClick={() => handleDelete(tx.id)} className="text-xs px-2 py-1 rounded bg-red-50 text-red-700 hover:bg-red-100">删除</button>}
+                      {isAdmin && (
+                        <div className="flex items-center justify-end gap-1">
+                          <button onClick={() => handleEdit(tx)} className="text-xs px-2 py-1 rounded bg-stone-100 text-stone-700 hover:bg-stone-200">编辑</button>
+                          <button onClick={() => handleDelete(tx.id)} className="text-xs px-2 py-1 rounded bg-red-50 text-red-700 hover:bg-red-100">删除</button>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))
