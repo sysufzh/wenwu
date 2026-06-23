@@ -65,6 +65,15 @@ const emptyForm = {
   remarks: '',
 };
 
+const SORT_FIELDS = [
+  { key: 'transaction_date', label: '日期' },
+  { key: 'type', label: '类型' },
+  { key: 'category', label: '类别' },
+  { key: 'amount', label: '金额' },
+  { key: 'funding_source', label: '经费来源' },
+  { key: 'reimbursement_status', label: '报销' },
+];
+
 export default function WorkLedgerPage() {
   return (
     <Suspense fallback={<div className="text-center py-12 text-stone-400">加载中…</div>}>
@@ -82,8 +91,12 @@ function WorkLedgerContent() {
   const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('');
+  const [fundingSourceFilter, setFundingSourceFilter] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+  const [sortField, setSortField] = useState('transaction_date');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [showStats, setShowStats] = useState(false);
@@ -98,7 +111,6 @@ function WorkLedgerContent() {
   const expenseCategories = ['办公费', '设备购置', '耗材费', '差旅费', '劳务费', '维修费', '运输费', '其他支出'];
   const incomeCategories = ['项目经费', '所拨经费', '其他收入'];
   const defaultCategories = form.type === '支出' ? expenseCategories : incomeCategories;
-  // Merge default categories with previously used custom categories
   const allCategories = Array.from(new Set([...defaultCategories, ...fieldValues.categories]));
 
   useEffect(() => {
@@ -116,8 +128,12 @@ function WorkLedgerContent() {
     params.set('ledgerType', '工作');
     if (search) params.set('search', search);
     if (typeFilter) params.set('type', typeFilter);
+    if (categoryFilter) params.set('category', categoryFilter);
+    if (fundingSourceFilter) params.set('fundingSource', fundingSourceFilter);
     if (dateFrom) params.set('dateFrom', dateFrom);
     if (dateTo) params.set('dateTo', dateTo);
+    if (sortField) params.set('sortField', sortField);
+    if (sortOrder) params.set('sortOrder', sortOrder);
     params.set('page', String(page));
     params.set('limit', '20');
 
@@ -134,7 +150,7 @@ function WorkLedgerContent() {
     setTotalPages(txData.totalPages);
     setStats(statsData);
     setLoading(false);
-  }, [search, typeFilter, dateFrom, dateTo, page]);
+  }, [search, typeFilter, categoryFilter, fundingSourceFilter, dateFrom, dateTo, page, sortField, sortOrder]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -222,6 +238,21 @@ function WorkLedgerContent() {
       alert(data.error || (editingId ? '更新失败' : '创建失败'));
     }
     setSaving(false);
+  };
+
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortOrder('asc');
+    }
+    setPage(1);
+  };
+
+  const sortArrow = (field: string) => {
+    if (sortField !== field) return <span className="text-stone-300 ml-0.5">⇅</span>;
+    return sortOrder === 'asc' ? <span className="text-amber-700 ml-0.5">↑</span> : <span className="text-amber-700 ml-0.5">↓</span>;
   };
 
   const formatAmount = (amount: number) => `¥${amount.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`;
@@ -385,6 +416,16 @@ function WorkLedgerContent() {
           <option value="收入">收入</option>
           <option value="支出">支出</option>
         </select>
+        <select value={categoryFilter} onChange={e => { setCategoryFilter(e.target.value); setPage(1); }}
+          className="px-3 py-2 border border-stone-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 max-w-32">
+          <option value="">全部类别</option>
+          {fieldValues.categories.map(c => <option key={c} value={c}>{c}</option>)}
+        </select>
+        <select value={fundingSourceFilter} onChange={e => { setFundingSourceFilter(e.target.value); setPage(1); }}
+          className="px-3 py-2 border border-stone-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 max-w-32">
+          <option value="">全部来源</option>
+          {fieldValues.fundingSources.map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
         <input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setPage(1); }}
           className="px-3 py-2 border border-stone-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-500" />
         <input type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setPage(1); }}
@@ -397,12 +438,24 @@ function WorkLedgerContent() {
           <table className="w-full text-sm">
             <thead className="bg-stone-50 border-b border-stone-200">
               <tr>
-                <th className="text-left px-4 py-3 font-medium text-stone-600">日期</th>
-                <th className="text-left px-4 py-3 font-medium text-stone-600">类型</th>
-                <th className="text-left px-4 py-3 font-medium text-stone-600 hidden sm:table-cell">类别</th>
-                <th className="text-right px-4 py-3 font-medium text-stone-600">金额</th>
-                <th className="text-left px-4 py-3 font-medium text-stone-600 hidden lg:table-cell">经费来源</th>
-                <th className="text-center px-4 py-3 font-medium text-stone-600">报销</th>
+                <th onClick={() => handleSort('transaction_date')} className="text-left px-4 py-3 font-medium text-stone-600 cursor-pointer select-none hover:bg-stone-100 transition-colors">
+                  日期{sortArrow('transaction_date')}
+                </th>
+                <th onClick={() => handleSort('type')} className="text-left px-4 py-3 font-medium text-stone-600 cursor-pointer select-none hover:bg-stone-100 transition-colors">
+                  类型{sortArrow('type')}
+                </th>
+                <th onClick={() => handleSort('category')} className="text-left px-4 py-3 font-medium text-stone-600 cursor-pointer select-none hover:bg-stone-100 transition-colors hidden sm:table-cell">
+                  类别{sortArrow('category')}
+                </th>
+                <th onClick={() => handleSort('amount')} className="text-right px-4 py-3 font-medium text-stone-600 cursor-pointer select-none hover:bg-stone-100 transition-colors">
+                  金额{sortArrow('amount')}
+                </th>
+                <th onClick={() => handleSort('funding_source')} className="text-left px-4 py-3 font-medium text-stone-600 cursor-pointer select-none hover:bg-stone-100 transition-colors hidden lg:table-cell">
+                  经费来源{sortArrow('funding_source')}
+                </th>
+                <th onClick={() => handleSort('reimbursement_status')} className="text-center px-4 py-3 font-medium text-stone-600 cursor-pointer select-none hover:bg-stone-100 transition-colors">
+                  报销{sortArrow('reimbursement_status')}
+                </th>
                 <th className="text-left px-4 py-3 font-medium text-stone-600 hidden md:table-cell">摘要</th>
                 <th className="text-right px-4 py-3 font-medium text-stone-600">操作</th>
               </tr>

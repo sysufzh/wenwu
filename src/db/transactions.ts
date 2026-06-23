@@ -37,22 +37,25 @@ export interface TransactionListParams {
   search?: string;
   type?: '收入' | '支出' | '';
   category?: string;
+  fundingSource?: string;
   ledgerType?: '生活' | '工作' | '';
   dateFrom?: string;
   dateTo?: string;
   page?: number;
   limit?: number;
+  sortField?: string;
+  sortOrder?: 'asc' | 'desc';
 }
 
 export function getTransactions(params: TransactionListParams = {}) {
   const db = getDb();
-  const { search, type, category, ledgerType, dateFrom, dateTo, page = 1, limit = 20 } = params;
+  const { search, type, category, fundingSource, ledgerType, dateFrom, dateTo, page = 1, limit = 20, sortField, sortOrder } = params;
 
   let whereClause = 'WHERE 1=1';
   const conditions: Record<string, string | number> = {};
 
   if (search) {
-    whereClause += ' AND (description LIKE @search OR handler LIKE @search OR category LIKE @search OR remarks LIKE @search)';
+    whereClause += ' AND (description LIKE @search OR handler LIKE @search OR category LIKE @search OR remarks LIKE @search OR funding_source LIKE @search)';
     conditions['search'] = `%${search}%`;
   }
 
@@ -64,6 +67,11 @@ export function getTransactions(params: TransactionListParams = {}) {
   if (category) {
     whereClause += ' AND category = @category';
     conditions['category'] = category;
+  }
+
+  if (fundingSource) {
+    whereClause += ' AND funding_source = @fundingSource';
+    conditions['fundingSource'] = fundingSource;
   }
 
   if (ledgerType) {
@@ -87,8 +95,13 @@ export function getTransactions(params: TransactionListParams = {}) {
   conditions['limit'] = limit;
   conditions['offset'] = offset;
 
+  const allowedSortFields = ['transaction_date', 'type', 'category', 'amount', 'funding_source', 'reimbursement_status'];
+  const field = sortField && allowedSortFields.includes(sortField) ? sortField : 'transaction_date';
+  const order = sortOrder === 'asc' ? 'ASC' : 'DESC';
+  const orderBy = field === 'transaction_date' ? `${field} ${order}, updated_at DESC` : `${field} ${order}, transaction_date DESC`;
+
   const rows = db.prepare(
-    `SELECT * FROM transactions ${whereClause} ORDER BY transaction_date DESC, updated_at DESC LIMIT @limit OFFSET @offset`
+    `SELECT * FROM transactions ${whereClause} ORDER BY ${orderBy} LIMIT @limit OFFSET @offset`
   ).all(conditions) as Transaction[];
 
   return {

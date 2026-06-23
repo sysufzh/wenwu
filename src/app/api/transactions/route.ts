@@ -6,15 +6,20 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const typeParam = searchParams.get('type') || '';
     const ledgerParam = searchParams.get('ledgerType') || '';
+    const sortOrderRaw = searchParams.get('sortOrder') || '';
+    const sortOrder = sortOrderRaw === 'asc' || sortOrderRaw === 'desc' ? sortOrderRaw : 'desc';
     const params: TransactionListParams = {
       search: searchParams.get('search') || '',
       type: (typeParam === '收入' || typeParam === '支出') ? typeParam : '',
       category: searchParams.get('category') || '',
+      fundingSource: searchParams.get('fundingSource') || '',
       ledgerType: (ledgerParam === '生活' || ledgerParam === '工作') ? ledgerParam : '',
       dateFrom: searchParams.get('dateFrom') || '',
       dateTo: searchParams.get('dateTo') || '',
       page: parseInt(searchParams.get('page') || '1'),
       limit: parseInt(searchParams.get('limit') || '20'),
+      sortField: searchParams.get('sortField') || '',
+      sortOrder: sortOrder as 'asc' | 'desc',
     };
     const result = getTransactions(params);
     return NextResponse.json(result);
