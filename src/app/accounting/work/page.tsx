@@ -21,6 +21,7 @@ interface Stats {
   totalExpense: number;
   balance: number;
   categoryBreakdown: { category: string; type: string; total: number }[];
+  byFundingSource: { funding_source: string; totalIncome: number; totalExpense: number; categories: { category: string; type: string; total: number }[] }[];
 }
 
 interface FieldValues {
@@ -85,7 +86,7 @@ export default function WorkLedgerPage() {
 function WorkLedgerContent() {
   const searchParams = useSearchParams();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [stats, setStats] = useState<Stats>({ totalIncome: 0, totalExpense: 0, balance: 0, categoryBreakdown: [] });
+  const [stats, setStats] = useState<Stats>({ totalIncome: 0, totalExpense: 0, balance: 0, categoryBreakdown: [], byFundingSource: [] });
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(parseInt(searchParams.get('page') || '1'));
   const [totalPages, setTotalPages] = useState(1);
@@ -295,7 +296,7 @@ function WorkLedgerContent() {
           {stats.categoryBreakdown.length > 0 && (
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-white rounded-xl shadow-sm p-4 border border-stone-200">
-                <h3 className="text-sm font-semibold text-stone-700 mb-2">支出分类</h3>
+                <h3 className="text-sm font-semibold text-stone-700 mb-2">支出分类（全部）</h3>
                 <div className="space-y-1.5">
                   {stats.categoryBreakdown.filter(c => c.type === '支出').map(c => (
                     <div key={`exp-${c.category}`} className="flex justify-between text-sm">
@@ -309,7 +310,7 @@ function WorkLedgerContent() {
                 </div>
               </div>
               <div className="bg-white rounded-xl shadow-sm p-4 border border-stone-200">
-                <h3 className="text-sm font-semibold text-stone-700 mb-2">收入分类</h3>
+                <h3 className="text-sm font-semibold text-stone-700 mb-2">收入分类（全部）</h3>
                 <div className="space-y-1.5">
                   {stats.categoryBreakdown.filter(c => c.type === '收入').map(c => (
                     <div key={`inc-${c.category}`} className="flex justify-between text-sm">
@@ -321,6 +322,33 @@ function WorkLedgerContent() {
                     <div className="text-stone-400 text-sm">暂无收入</div>
                   )}
                 </div>
+              </div>
+            </div>
+          )}
+
+          {stats.byFundingSource.length > 0 && (
+            <div>
+              <h3 className="text-sm font-semibold text-stone-700 mb-3">按经费来源</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {stats.byFundingSource.map(src => (
+                  <div key={src.funding_source} className="bg-white rounded-xl shadow-sm p-4 border border-stone-200">
+                    <div className="flex justify-between items-center mb-2">
+                      <h4 className="text-sm font-semibold text-amber-800">{src.funding_source}</h4>
+                      <div className="text-xs text-stone-500">
+                        {src.totalIncome > 0 && <span className="text-green-600 mr-2">收 {formatAmount(src.totalIncome)}</span>}
+                        <span className="text-red-600">支 {formatAmount(src.totalExpense)}</span>
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      {src.categories.filter(c => c.type === '支出').map(c => (
+                        <div key={`${src.funding_source}-${c.category}`} className="flex justify-between text-sm">
+                          <span className="text-stone-600">{c.category || '未分类'}</span>
+                          <span className="text-red-600 font-medium">{formatAmount(c.total)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}

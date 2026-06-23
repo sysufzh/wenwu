@@ -207,11 +207,38 @@ export function getTransactionStats(ledgerType?: '生活' | '工作') {
     `SELECT category, type, COALESCE(SUM(amount), 0) as total FROM transactions WHERE 1=1${typeFilter} GROUP BY type, category ORDER BY type, total DESC`
   ).all(conditions) as { category: string; type: string; total: number }[];
 
+  const fundingSourceBreakdown = db.prepare(
+    `SELECT funding_source, type, category, COALESCE(SUM(amount), 0) as total
+     FROM transactions WHERE funding_source != ''${typeFilter}
+     GROUP BY funding_source, type, category
+     ORDER BY funding_source, type, total DESC`
+  ).all(conditions) as { funding_source: string; type: string; category: string; total: number }[];
+
+  // Group into nested structure
+  const sourceMap = new Map<string, { totalIncome: number; totalExpense: number; categories: { category: string; type: string; total: number }[] }>();
+  for (const row of fundingSourceBreakdown) {
+    if (!sourceMap.has(row.funding_source)) {
+      sourceMap.set(row.funding_source, { totalIncome: 0, totalExpense: 0, categories: [] });
+    }
+    const entry = sourceMap.get(row.funding_source)!;
+    entry.categories.push({ category: row.category, type: row.type, total: row.total });
+    if (row.type === '收入') entry.totalIncome += row.total;
+    else entry.totalExpense += row.total;
+  }
+
+  const byFundingSource = Array.from(sourceMap.entries()).map(([source, data]) => ({
+    funding_source: source,
+    totalIncome: data.totalIncome,
+    totalExpense: data.totalExpense,
+    categories: data.categories.sort((a, b) => b.total - a.total),
+  }));
+
   return {
     totalIncome: totalIncome.total,
     totalExpense: totalExpense.total,
     balance: totalIncome.total - totalExpense.total,
     categoryBreakdown,
+    byFundingSource,
   };
 }
 
