@@ -44,6 +44,7 @@ function loadLastForm() {
 function saveLastForm(form: Record<string, unknown>) {
   try {
     localStorage.setItem(LS_KEY, JSON.stringify({
+      transaction_date: form.transaction_date,
       category: form.category,
       funding_source: form.funding_source,
       handler: form.handler,
