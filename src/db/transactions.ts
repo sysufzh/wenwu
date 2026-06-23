@@ -189,15 +189,23 @@ export function deleteTransaction(id: number): boolean {
   return result.changes > 0;
 }
 
-export function getTransactionStats(ledgerType?: '生活' | '工作') {
+export function getTransactionStats(ledgerType?: '生活' | '工作', dateFrom?: string, dateTo?: string) {
   const db = getDb();
 
   let typeFilter = '';
   const conditions: Record<string, string> = {};
 
   if (ledgerType) {
-    typeFilter = ' AND ledger_type = @ledgerType';
+    typeFilter += ' AND ledger_type = @ledgerType';
     conditions['ledgerType'] = ledgerType;
+  }
+  if (dateFrom) {
+    typeFilter += ' AND transaction_date >= @dateFrom';
+    conditions['dateFrom'] = dateFrom;
+  }
+  if (dateTo) {
+    typeFilter += ' AND transaction_date <= @dateTo';
+    conditions['dateTo'] = dateTo;
   }
 
   const totalIncome = db.prepare(`SELECT COALESCE(SUM(amount), 0) as total FROM transactions WHERE type = '收入'${typeFilter}`).get(conditions) as { total: number };

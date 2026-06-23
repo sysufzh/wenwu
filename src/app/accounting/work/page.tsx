@@ -96,6 +96,7 @@ function WorkLedgerContent() {
   const [fundingSourceFilter, setFundingSourceFilter] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+  const [yearFilter, setYearFilter] = useState('');
   const [sortField, setSortField] = useState('transaction_date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [loading, setLoading] = useState(true);
@@ -138,9 +139,14 @@ function WorkLedgerContent() {
     params.set('page', String(page));
     params.set('limit', '20');
 
+    const statsParams = new URLSearchParams();
+    statsParams.set('ledgerType', '工作');
+    if (dateFrom) statsParams.set('dateFrom', dateFrom);
+    if (dateTo) statsParams.set('dateTo', dateTo);
+
     const [txRes, statsRes] = await Promise.all([
       fetch(`/api/transactions?${params}`),
-      fetch('/api/transactions/stats?ledgerType=工作'),
+      fetch(`/api/transactions/stats?${statsParams}`),
     ]);
 
     const txData = await txRes.json();
@@ -241,6 +247,21 @@ function WorkLedgerContent() {
     setSaving(false);
   };
 
+  const handleYearChange = (year: string) => {
+    setYearFilter(year);
+    if (year) {
+      setDateFrom(`${year}-01-01`);
+      setDateTo(`${year}-12-31`);
+    } else {
+      setDateFrom('');
+      setDateTo('');
+    }
+    setPage(1);
+  };
+
+  const currentYear = new Date().getFullYear();
+  const yearOptions = Array.from({ length: 10 }, (_, i) => String(currentYear - i));
+
   const handleSort = (field: string) => {
     if (sortField === field) {
       setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
@@ -277,6 +298,7 @@ function WorkLedgerContent() {
       {/* Stats */}
       {showStats && (
         <div className="space-y-4">
+          {yearFilter && <div className="text-sm font-medium text-amber-700 bg-amber-50 inline-block px-3 py-1 rounded-lg">{yearFilter} 年统计</div>}
           <div className="grid grid-cols-3 gap-4">
             <div className="bg-white rounded-xl shadow-sm p-4 border border-stone-200">
               <div className="text-xs text-stone-500">总收入</div>
@@ -436,6 +458,11 @@ function WorkLedgerContent() {
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-2">
+        <select value={yearFilter} onChange={e => handleYearChange(e.target.value)}
+          className="px-3 py-2 border border-stone-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-500">
+          <option value="">全部年份</option>
+          {yearOptions.map(y => <option key={y} value={y}>{y} 年</option>)}
+        </select>
         <input type="text" placeholder="搜索摘要、经办人…" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}
           className="flex-1 px-3 py-2 border border-stone-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-500" />
         <select value={typeFilter} onChange={e => { setTypeFilter(e.target.value); setPage(1); }}
