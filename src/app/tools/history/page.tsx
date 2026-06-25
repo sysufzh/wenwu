@@ -76,6 +76,7 @@ function ToolHistoryContent() {
             </span>
           </div>
           <div className="flex gap-3 mt-1.5 text-xs text-stone-500">
+            <span>{r.recordType === 'checkout' ? `出库 ${r.checkout_quantity || 1} 件` : `归还 ${r.checkin_quantity || 1} 件`}</span>
             <span>经办人: {r.recordType === 'checkout' ? r.checkout_person : r.checkin_person || '-'}</span>
             <span>{r.recordType === 'checkout' ? (r.checkout_time ? new Date(r.checkout_time).toLocaleString('zh-CN') : '-') : (r.checkin_time ? new Date(r.checkin_time).toLocaleString('zh-CN') : '-')}</span>
           </div>
@@ -100,6 +101,7 @@ function ToolHistoryContent() {
           </span>
         </div>
         <div className="flex gap-3 mt-1.5 text-xs text-stone-500">
+          <span>{typeFilter === 'checkout' ? `出库 ${r.checkout_quantity || 1} 件` : `归还 ${r.checkin_quantity || 1} 件`}</span>
           <span>经办人: {typeFilter === 'checkout' ? r.checkout_person : r.checkin_person || '-'}</span>
           <span>{(typeFilter === 'checkout' ? r.checkout_time : r.checkin_time) ? new Date((typeFilter === 'checkout' ? r.checkout_time : r.checkin_time)).toLocaleString('zh-CN') : '-'}</span>
         </div>

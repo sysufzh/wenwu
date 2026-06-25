@@ -72,6 +72,7 @@ CREATE TABLE IF NOT EXISTS tool_checkout_records (
   checkout_time DATETIME DEFAULT (datetime('now','localtime')),
   checkout_person TEXT NOT NULL DEFAULT '',
   purpose TEXT DEFAULT '',
+  checkout_quantity INTEGER DEFAULT 1,
   created_at DATETIME DEFAULT (datetime('now','localtime')),
   FOREIGN KEY (tool_id) REFERENCES tools(id)
 );
@@ -84,6 +85,7 @@ CREATE TABLE IF NOT EXISTS tool_checkin_records (
   checkin_person TEXT NOT NULL DEFAULT '',
   condition_notes TEXT DEFAULT '',
   remarks TEXT DEFAULT '',
+  checkin_quantity INTEGER DEFAULT 1,
   created_at DATETIME DEFAULT (datetime('now','localtime')),
   FOREIGN KEY (tool_id) REFERENCES tools(id),
   FOREIGN KEY (checkout_record_id) REFERENCES tool_checkout_records(id)

@@ -21,6 +21,7 @@ export default function ToolCheckoutPage() {
   const [checkoutPerson, setCheckoutPerson] = useState('');
   const [checkoutPurpose, setCheckoutPurpose] = useState('');
   const [checkoutTime, setCheckoutTime] = useState('');
+  const [checkoutQuantity, setCheckoutQuantity] = useState(1);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
 
@@ -38,6 +39,8 @@ export default function ToolCheckoutPage() {
     e.preventDefault();
     if (!selectedId) { alert('请选择一件工具'); return; }
     if (!checkoutPerson.trim()) { alert('经办人不能为空'); return; }
+    const selectedTool = tools.find(t => t.id === selectedId);
+    if (selectedTool && checkoutQuantity > selectedTool.quantity) { alert(`库存不足，当前可用数量为 ${selectedTool.quantity}${selectedTool.unit || '件'}`); return; }
     setSubmitting(true);
     const res = await fetch(`/api/tools/${selectedId}/checkout`, {
       method: 'POST',
@@ -46,6 +49,7 @@ export default function ToolCheckoutPage() {
         checkout_person: checkoutPerson,
         purpose: checkoutPurpose,
         checkout_time: checkoutTime || undefined,
+        checkout_quantity: checkoutQuantity,
       }),
     });
     if (res.ok) {
@@ -54,6 +58,7 @@ export default function ToolCheckoutPage() {
       setCheckoutPerson('');
       setCheckoutPurpose('');
       setCheckoutTime('');
+      setCheckoutQuantity(1);
       fetchInStock();
       setTimeout(() => setSuccess(false), 3000);
     } else {
@@ -103,6 +108,16 @@ export default function ToolCheckoutPage() {
           <label className="block text-sm font-medium text-stone-700 mb-1">出库用途</label>
           <input value={checkoutPurpose} onChange={e => setCheckoutPurpose(e.target.value)}
             className="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" placeholder="如田野调查、测绘、维修等" />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-stone-700 mb-1">出库数量 <span className="text-red-500">*</span></label>
+          <input required type="number" min="1" value={checkoutQuantity} onChange={e => setCheckoutQuantity(parseInt(e.target.value) || 0)}
+            className="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+          {selectedId && (() => {
+            const t = tools.find(t => t.id === selectedId);
+            return t ? <div className="text-xs text-stone-400 mt-1">当前库存 {t.quantity}{t.unit || '件'}</div> : null;
+          })()}
         </div>
 
         <div>

@@ -20,7 +20,8 @@ export async function POST(
       body.checkin_person,
       body.condition_notes,
       body.remarks,
-      body.checkin_time || undefined
+      body.checkin_time || undefined,
+      body.checkin_quantity ? parseInt(body.checkin_quantity) : undefined
     );
     return NextResponse.json(record, { status: 201 });
   } catch (error) {

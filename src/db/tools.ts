@@ -162,6 +162,7 @@ export interface ToolCheckoutRecord {
   checkout_time: string;
   checkout_person: string;
   purpose: string;
+  checkout_quantity: number;
   created_at: string;
 }
 
@@ -173,35 +174,43 @@ export interface ToolCheckinRecord {
   checkin_person: string;
   condition_notes: string;
   remarks: string;
+  checkin_quantity: number;
   created_at: string;
 }
 
-export function checkoutTool(toolId: number, checkoutPerson: string, purpose?: string, checkoutTime?: string): ToolCheckoutRecord {
+export function checkoutTool(toolId: number, checkoutPerson: string, purpose?: string, checkoutTime?: string, checkoutQuantity?: number): ToolCheckoutRecord {
   const db = getDb();
   const time = checkoutTime || new Date().toISOString();
+  const qty = checkoutQuantity ?? 1;
 
   const result = db.prepare(
-    `INSERT INTO tool_checkout_records (tool_id, checkout_time, checkout_person, purpose)
-     VALUES (@tool_id, @checkout_time, @checkout_person, @purpose)`
+    `INSERT INTO tool_checkout_records (tool_id, checkout_time, checkout_person, purpose, checkout_quantity)
+     VALUES (@tool_id, @checkout_time, @checkout_person, @purpose, @checkout_quantity)`
   ).run({
     tool_id: toolId,
     checkout_time: time,
     checkout_person: checkoutPerson,
     purpose: purpose || '',
+    checkout_quantity: qty,
   });
 
-  db.prepare("UPDATE tools SET status = '出库', updated_at = datetime('now', 'localtime') WHERE id = ?").run(toolId);
+  const tool = db.prepare('SELECT quantity FROM tools WHERE id = ?').get(toolId) as { quantity: number };
+  const remaining = tool.quantity - qty;
+  db.prepare(
+    "UPDATE tools SET quantity = ?, status = CASE WHEN ? <= 0 THEN '出库' ELSE '在库' END, updated_at = datetime('now', 'localtime') WHERE id = ?"
+  ).run(remaining, remaining, toolId);
 
   return db.prepare('SELECT * FROM tool_checkout_records WHERE id = ?').get(result.lastInsertRowid) as ToolCheckoutRecord;
 }
 
-export function checkinTool(toolId: number, checkoutRecordId: number, checkinPerson: string, conditionNotes?: string, remarks?: string, checkinTime?: string): ToolCheckinRecord {
+export function checkinTool(toolId: number, checkoutRecordId: number, checkinPerson: string, conditionNotes?: string, remarks?: string, checkinTime?: string, checkinQuantity?: number): ToolCheckinRecord {
   const db = getDb();
   const time = checkinTime || new Date().toISOString();
+  const qty = checkinQuantity ?? 1;
 
   const result = db.prepare(
-    `INSERT INTO tool_checkin_records (tool_id, checkout_record_id, checkin_time, checkin_person, condition_notes, remarks)
-     VALUES (@tool_id, @checkout_record_id, @checkin_time, @checkin_person, @condition_notes, @remarks)`
+    `INSERT INTO tool_checkin_records (tool_id, checkout_record_id, checkin_time, checkin_person, condition_notes, remarks, checkin_quantity)
+     VALUES (@tool_id, @checkout_record_id, @checkin_time, @checkin_person, @condition_notes, @remarks, @checkin_quantity)`
   ).run({
     tool_id: toolId,
     checkout_record_id: checkoutRecordId,
@@ -209,9 +218,14 @@ export function checkinTool(toolId: number, checkoutRecordId: number, checkinPer
     checkin_person: checkinPerson,
     condition_notes: conditionNotes || '',
     remarks: remarks || '',
+    checkin_quantity: qty,
   });
 
-  db.prepare("UPDATE tools SET status = '在库', updated_at = datetime('now', 'localtime') WHERE id = ?").run(toolId);
+  const tool = db.prepare('SELECT quantity FROM tools WHERE id = ?').get(toolId) as { quantity: number };
+  const newQty = tool.quantity + qty;
+  db.prepare(
+    "UPDATE tools SET quantity = ?, status = '在库', updated_at = datetime('now', 'localtime') WHERE id = ?"
+  ).run(newQty, toolId);
 
   return db.prepare('SELECT * FROM tool_checkin_records WHERE id = ?').get(result.lastInsertRowid) as ToolCheckinRecord;
 }

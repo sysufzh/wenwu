@@ -15,7 +15,8 @@ export async function POST(
       parseInt(id),
       body.checkout_person,
       body.purpose,
-      body.checkout_time || undefined
+      body.checkout_time || undefined,
+      body.checkout_quantity ? parseInt(body.checkout_quantity) : undefined
     );
     return NextResponse.json(record, { status: 201 });
   } catch (error) {
