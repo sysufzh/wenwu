@@ -108,6 +108,17 @@ export default function HomePage() {
               <div className="text-sm text-stone-500 mt-0.5">用章日期、事项、数量、盖章人</div>
             </div>
           </Link>
+
+          <Link
+            href="/diary"
+            className="flex items-center gap-5 bg-white rounded-xl shadow-sm border border-stone-200 p-6 hover:border-amber-400 hover:shadow-md transition-all"
+          >
+            <div className="text-4xl">📓</div>
+            <div>
+              <div className="text-lg font-bold text-stone-800">考古日记生成</div>
+              <div className="text-sm text-stone-500 mt-0.5">填写探方发掘信息，自动生成标准格式日记</div>
+            </div>
+          </Link>
         </div>
 
         {/* Admin backup button */}

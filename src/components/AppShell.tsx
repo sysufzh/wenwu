@@ -72,6 +72,16 @@ const sealConfig: SubSystemConfig = {
   backLabel: '返回主页',
 };
 
+const diaryConfig: SubSystemConfig = {
+  title: '考古日记生成',
+  subtitle: '中国社会科学院考古研究所东南工作队',
+  navItems: [
+    { href: '/diary', label: '日记生成', icon: '📓' },
+  ],
+  backHref: '/',
+  backLabel: '返回主页',
+};
+
 function getConfig(pathname: string): SubSystemConfig | undefined {
   if (pathname === '/login' || pathname === '/') return undefined;
 
@@ -102,6 +112,10 @@ function getConfig(pathname: string): SubSystemConfig | undefined {
 
   if (pathname.startsWith('/seals')) {
     return sealConfig;
+  }
+
+  if (pathname.startsWith('/diary')) {
+    return diaryConfig;
   }
 
   return undefined;

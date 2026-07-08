@@ -156,6 +156,18 @@ CREATE TABLE IF NOT EXISTS fixed_assets (
   updated_at DATETIME DEFAULT (datetime('now','localtime'))
 );
 
+-- 考古日记
+CREATE TABLE IF NOT EXISTS excavation_diaries (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  diary_date TEXT NOT NULL DEFAULT '',
+  weather TEXT DEFAULT '',
+  trench_number TEXT DEFAULT '',
+  recorder TEXT DEFAULT '',
+  content TEXT NOT NULL DEFAULT '',
+  created_at DATETIME DEFAULT (datetime('now','localtime')),
+  updated_at DATETIME DEFAULT (datetime('now','localtime'))
+);
+
 -- 公章使用登记
 CREATE TABLE IF NOT EXISTS seal_usage (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
