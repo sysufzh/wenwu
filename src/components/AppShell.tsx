@@ -36,7 +36,6 @@ const accountingConfig: SubSystemConfig = {
   subtitle: '中国社会科学院考古研究所东南工作队',
   navItems: [
     { href: '/accounting', label: '账本选择', icon: '📊' },
-    { href: '/accounting/living', label: '生活账本', icon: '🍚' },
     { href: '/accounting/work', label: '工作账本', icon: '💼' },
   ],
   backHref: '/',
