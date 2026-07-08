@@ -161,6 +161,8 @@ CREATE TABLE IF NOT EXISTS excavation_diaries (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   diary_date TEXT NOT NULL DEFAULT '',
   weather TEXT DEFAULT '',
+  wind_direction TEXT DEFAULT '',
+  humidity TEXT DEFAULT '',
   trench_number TEXT DEFAULT '',
   recorder TEXT DEFAULT '',
   content TEXT NOT NULL DEFAULT '',

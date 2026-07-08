@@ -42,6 +42,8 @@ function migrateSchema() {
     "ALTER TABLE transactions ADD COLUMN reimbursement_status TEXT DEFAULT '未报销'",
     "ALTER TABLE tool_checkout_records ADD COLUMN checkout_quantity INTEGER DEFAULT 1",
     "ALTER TABLE tool_checkin_records ADD COLUMN checkin_quantity INTEGER DEFAULT 1",
+    "ALTER TABLE excavation_diaries ADD COLUMN wind_direction TEXT DEFAULT ''",
+    "ALTER TABLE excavation_diaries ADD COLUMN humidity TEXT DEFAULT ''",
   ];
   for (const sql of migrations) {
     try { db.exec(sql); } catch { /* column already exists */ }

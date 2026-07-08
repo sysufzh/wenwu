@@ -4,6 +4,8 @@ export interface ExcavationDiary {
   id: number;
   diary_date: string;
   weather: string;
+  wind_direction: string;
+  humidity: string;
   trench_number: string;
   recorder: string;
   content: string;
@@ -14,6 +16,8 @@ export interface ExcavationDiary {
 export interface DiaryCreateInput {
   diary_date: string;
   weather?: string;
+  wind_direction?: string;
+  humidity?: string;
   trench_number?: string;
   recorder?: string;
   content: string;
@@ -62,12 +66,14 @@ export function createDiary(input: DiaryCreateInput): ExcavationDiary {
   const db = getDb();
   const now = new Date().toISOString();
   const stmt = db.prepare(
-    `INSERT INTO excavation_diaries (diary_date, weather, trench_number, recorder, content, created_at, updated_at)
-     VALUES (@diary_date, @weather, @trench_number, @recorder, @content, @created_at, @updated_at)`
+    `INSERT INTO excavation_diaries (diary_date, weather, wind_direction, humidity, trench_number, recorder, content, created_at, updated_at)
+     VALUES (@diary_date, @weather, @wind_direction, @humidity, @trench_number, @recorder, @content, @created_at, @updated_at)`
   );
   const result = stmt.run({
     diary_date: input.diary_date,
     weather: input.weather || '',
+    wind_direction: input.wind_direction || '',
+    humidity: input.humidity || '',
     trench_number: input.trench_number || '',
     recorder: input.recorder || '',
     content: input.content,
