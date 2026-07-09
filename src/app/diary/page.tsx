@@ -17,29 +17,46 @@ interface ArtifactRow {
   type: string; quantity: string; number: string;
 }
 
+interface SpecimenRow {
+  number: string; category: string; quantity: string;
+}
+
+interface SmallFindRow {
+  number: string; category: string; coordinate: string; location: string;
+}
+
 interface LayerPanel {
   layer_number: string; excavate_direction: string; work_progress: string;
   excavate_time_start: string; excavate_time_end: string;
   excavate_method: string; excavate_tool: string; use_sieve: string;
   soil_texture: string; soil_color: string; soil_density: string;
   inclusions: InclusionRow[]; artifacts_found: ArtifactRow[];
+  specimens: SpecimenRow[];
   has_special_feature: string; special_feature_desc: string;
   corner_depth_ne: string; corner_depth_se: string; corner_depth_sw: string; corner_depth_nw: string;
   layer_completed: string; layer_thickness: string;
   upper_interface_shape: string; lower_interface_shape: string; layer_nature: string;
+  has_small_find: string; small_finds: SmallFindRow[];
 }
 
 interface HalfDeposit {
-  layer: string; texture: string; color: string; inclusions: string; thickness: string;
+  layer: string;
+  soil_texture: string; soil_color: string; soil_density: string;
+  thickness: string;
   upper_interface: string; lower_interface: string;
-  specimen: string; artifacts: string; soil_sample: string;
+  inclusions: InclusionRow[];
+  artifacts_found: ArtifactRow[];
+  specimens: SpecimenRow[];
+  soil_sample: string;
 }
 
 interface CompleteDepositLayer {
   layer: string; texture: string; color: string; density: string; thickness: string;
   upper_interface: string; lower_interface: string;
-  specimen: string; artifacts: string; soil_sample: string;
   inclusions: InclusionRow[];
+  artifacts_found: ArtifactRow[];
+  specimens: SpecimenRow[];
+  soil_sample: string;
   observation: string;
 }
 
@@ -47,42 +64,50 @@ interface FeaturePanel {
   feature_number: string; feature_type: string; feature_opening: string;
   break_relation: string; shape: string; dimensions: string;
   excavate_method: string; section_dir: string; complete_status: string;
-  // half-complete
   half_deposits: HalfDeposit[];
   special_observation: string;
-  // complete
   mouth_clarity: string; profile_wall: string; profile_bottom: string;
   wall_desc: string; bottom_clarity: string; bottom_desc: string;
   posthole_angle: string; posthole_direction: string;
   complete_deposits: CompleteDepositLayer[];
   stratigraphy_diagram: string;
+  has_small_find: string; small_finds: SmallFindRow[];
 }
 
 // Defaults
 const emptyInclusion = (): InclusionRow => ({ type: '', proportion: '', particleSize: '', sorting: '一般', roundness: '略有棱角的' });
 const emptyArtifact = (): ArtifactRow => ({ type: '', quantity: '', number: '' });
+const emptySpecimen = (): SpecimenRow => ({ number: '', category: '', quantity: '' });
+const emptySmallFind = (): SmallFindRow => ({ number: '', category: '', coordinate: '', location: '' });
+
 const emptyLayerPanel = (): LayerPanel => ({
   layer_number: '①', excavate_direction: '', work_progress: '',
   excavate_time_start: '', excavate_time_end: '',
   excavate_method: '水平发掘法', excavate_tool: '铁锹', use_sieve: '否',
   soil_texture: '', soil_color: '', soil_density: '较疏松',
   inclusions: [emptyInclusion()], artifacts_found: [emptyArtifact()],
+  specimens: [emptySpecimen()],
   has_special_feature: '否', special_feature_desc: '',
   corner_depth_ne: '', corner_depth_se: '', corner_depth_sw: '', corner_depth_nw: '',
   layer_completed: '否', layer_thickness: '',
   upper_interface_shape: '水平状', lower_interface_shape: '水平状', layer_nature: '',
+  has_small_find: '否', small_finds: [emptySmallFind()],
 });
+
 const emptyHalfDeposit = (): HalfDeposit => ({
-  layer: '', texture: '', color: '', inclusions: '', thickness: '',
-  upper_interface: '水平状', lower_interface: '水平状',
-  specimen: '', artifacts: '', soil_sample: '',
+  layer: '', soil_texture: '', soil_color: '', soil_density: '较疏松',
+  thickness: '', upper_interface: '水平状', lower_interface: '水平状',
+  inclusions: [emptyInclusion()], artifacts_found: [emptyArtifact()],
+  specimens: [emptySpecimen()], soil_sample: '',
 });
+
 const emptyCompleteDeposit = (): CompleteDepositLayer => ({
   layer: '', texture: '', color: '', density: '较疏松', thickness: '',
   upper_interface: '水平状', lower_interface: '水平状',
-  specimen: '', artifacts: '', soil_sample: '',
-  inclusions: [emptyInclusion()], observation: '',
+  inclusions: [emptyInclusion()], artifacts_found: [emptyArtifact()],
+  specimens: [emptySpecimen()], soil_sample: '', observation: '',
 });
+
 const emptyFeature = (): FeaturePanel => ({
   feature_number: '', feature_type: '灰坑', feature_opening: '',
   break_relation: '', shape: '圆形', dimensions: '',
@@ -92,18 +117,23 @@ const emptyFeature = (): FeaturePanel => ({
   wall_desc: '', bottom_clarity: '明显', bottom_desc: '',
   posthole_angle: '', posthole_direction: '',
   complete_deposits: [emptyCompleteDeposit()], stratigraphy_diagram: '',
+  has_small_find: '否', small_finds: [emptySmallFind()],
 });
 
+const today = () => new Date().toISOString().slice(0, 10);
+
 const defaultForm = {
-  diary_date: new Date().toISOString().slice(0, 10),
+  diary_date: today(),
   weather: '晴', wind_direction: '', humidity: '',
   trench_number: '', recorder: '',
   work_type: 'excavation' as 'excavation' | 'rest',
   has_layer_excavation: true, has_scraping: false, has_feature_excavation: false,
   layer_panels: [emptyLayerPanel()],
   scrape_progress: '全方一次', scrape_direction: '', scrape_observation: '',
+  scrape_time_start: '', scrape_time_end: '',
   feature_panels: [emptyFeature()],
-  work_summary: '', tomorrow_plan: '', specimen_register: '', small_finds_register: '',
+  work_summary: '', tomorrow_plan: '',
+  specimen_register: '', small_finds_register: '',
 };
 
 // ============ Component ============
@@ -126,6 +156,7 @@ function DiaryContent() {
   const [p, setP] = useState(parseInt(searchParams.get('page') || '1'));
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState<Record<string, boolean>>({});
 
   const u = (key: string, value: unknown) => setForm(f => ({ ...f, [key]: value }));
 
@@ -142,6 +173,16 @@ function DiaryContent() {
     const lp = [...f.layer_panels];
     const arts = [...lp[pi].artifacts_found]; arts[ri] = { ...arts[ri], [key]: val };
     lp[pi] = { ...lp[pi], artifacts_found: arts }; return { ...f, layer_panels: lp };
+  });
+  const ulSpec = (pi: number, ri: number, key: string, val: string) => setForm(f => {
+    const lp = [...f.layer_panels];
+    const sp = [...lp[pi].specimens]; sp[ri] = { ...sp[ri], [key]: val };
+    lp[pi] = { ...lp[pi], specimens: sp }; return { ...f, layer_panels: lp };
+  });
+  const ulSF = (pi: number, ri: number, key: string, val: string) => setForm(f => {
+    const lp = [...f.layer_panels];
+    const sf = [...lp[pi].small_finds]; sf[ri] = { ...sf[ri], [key]: val };
+    lp[pi] = { ...lp[pi], small_finds: sf }; return { ...f, layer_panels: lp };
   });
   const addLayer = () => setForm(f => ({ ...f, layer_panels: [...f.layer_panels, emptyLayerPanel()] }));
   const delLayer = (i: number) => setForm(f => ({ ...f, layer_panels: f.layer_panels.filter((_, idx) => idx !== i) }));
@@ -161,6 +202,22 @@ function DiaryContent() {
     const lp = [...f.layer_panels]; lp[pi] = { ...lp[pi], artifacts_found: lp[pi].artifacts_found.filter((_, i) => i !== ri) };
     return { ...f, layer_panels: lp };
   });
+  const addLayerSpec = (pi: number) => setForm(f => {
+    const lp = [...f.layer_panels]; lp[pi] = { ...lp[pi], specimens: [...lp[pi].specimens, emptySpecimen()] };
+    return { ...f, layer_panels: lp };
+  });
+  const delLayerSpec = (pi: number, ri: number) => setForm(f => {
+    const lp = [...f.layer_panels]; lp[pi] = { ...lp[pi], specimens: lp[pi].specimens.filter((_, i) => i !== ri) };
+    return { ...f, layer_panels: lp };
+  });
+  const addLayerSF = (pi: number) => setForm(f => {
+    const lp = [...f.layer_panels]; lp[pi] = { ...lp[pi], small_finds: [...lp[pi].small_finds, emptySmallFind()] };
+    return { ...f, layer_panels: lp };
+  });
+  const delLayerSF = (pi: number, ri: number) => setForm(f => {
+    const lp = [...f.layer_panels]; lp[pi] = { ...lp[pi], small_finds: lp[pi].small_finds.filter((_, i) => i !== ri) };
+    return { ...f, layer_panels: lp };
+  });
 
   // Feature panel helpers
   const uf = (i: number, key: string, val: unknown) => setForm(f => {
@@ -168,6 +225,21 @@ function DiaryContent() {
   });
   const addFeature = () => setForm(f => ({ ...f, feature_panels: [...f.feature_panels, emptyFeature()] }));
   const delFeature = (i: number) => setForm(f => ({ ...f, feature_panels: f.feature_panels.filter((_, idx) => idx !== i) }));
+
+  // Feature small finds
+  const ufSF = (fi: number, ri: number, key: string, val: string) => setForm(f => {
+    const fp = [...f.feature_panels];
+    const sf = [...fp[fi].small_finds]; sf[ri] = { ...sf[ri], [key]: val };
+    fp[fi] = { ...fp[fi], small_finds: sf }; return { ...f, feature_panels: fp };
+  });
+  const addFeatSF = (fi: number) => setForm(f => {
+    const fp = [...f.feature_panels]; fp[fi] = { ...fp[fi], small_finds: [...fp[fi].small_finds, emptySmallFind()] };
+    return { ...f, feature_panels: fp };
+  });
+  const delFeatSF = (fi: number, ri: number) => setForm(f => {
+    const fp = [...f.feature_panels]; fp[fi] = { ...fp[fi], small_finds: fp[fi].small_finds.filter((_, i) => i !== ri) };
+    return { ...f, feature_panels: fp };
+  });
 
   // Half deposit helpers
   const uhd = (fi: number, di: number, key: string, val: string) => setForm(f => {
@@ -182,6 +254,60 @@ function DiaryContent() {
   const delHalfDep = (fi: number, di: number) => setForm(f => {
     const fp = [...f.feature_panels]; fp[fi] = { ...fp[fi], half_deposits: fp[fi].half_deposits.filter((_, i) => i !== di) };
     return { ...f, feature_panels: fp };
+  });
+  // Half deposit inclusions
+  const uhdInc = (fi: number, di: number, ri: number, key: string, val: string) => setForm(f => {
+    const fp = [...f.feature_panels];
+    const hd = [...fp[fi].half_deposits];
+    const incs = [...hd[di].inclusions]; incs[ri] = { ...incs[ri], [key]: val };
+    hd[di] = { ...hd[di], inclusions: incs };
+    fp[fi] = { ...fp[fi], half_deposits: hd }; return { ...f, feature_panels: fp };
+  });
+  const addHdInc = (fi: number, di: number) => setForm(f => {
+    const fp = [...f.feature_panels];
+    const hd = [...fp[fi].half_deposits]; hd[di] = { ...hd[di], inclusions: [...hd[di].inclusions, emptyInclusion()] };
+    fp[fi] = { ...fp[fi], half_deposits: hd }; return { ...f, feature_panels: fp };
+  });
+  const delHdInc = (fi: number, di: number, ri: number) => setForm(f => {
+    const fp = [...f.feature_panels];
+    const hd = [...fp[fi].half_deposits]; hd[di] = { ...hd[di], inclusions: hd[di].inclusions.filter((_, i) => i !== ri) };
+    fp[fi] = { ...fp[fi], half_deposits: hd }; return { ...f, feature_panels: fp };
+  });
+  // Half deposit artifacts
+  const uhdArt = (fi: number, di: number, ri: number, key: string, val: string) => setForm(f => {
+    const fp = [...f.feature_panels];
+    const hd = [...fp[fi].half_deposits];
+    const arts = [...hd[di].artifacts_found]; arts[ri] = { ...arts[ri], [key]: val };
+    hd[di] = { ...hd[di], artifacts_found: arts };
+    fp[fi] = { ...fp[fi], half_deposits: hd }; return { ...f, feature_panels: fp };
+  });
+  const addHdArt = (fi: number, di: number) => setForm(f => {
+    const fp = [...f.feature_panels];
+    const hd = [...fp[fi].half_deposits]; hd[di] = { ...hd[di], artifacts_found: [...hd[di].artifacts_found, emptyArtifact()] };
+    fp[fi] = { ...fp[fi], half_deposits: hd }; return { ...f, feature_panels: fp };
+  });
+  const delHdArt = (fi: number, di: number, ri: number) => setForm(f => {
+    const fp = [...f.feature_panels];
+    const hd = [...fp[fi].half_deposits]; hd[di] = { ...hd[di], artifacts_found: hd[di].artifacts_found.filter((_, i) => i !== ri) };
+    fp[fi] = { ...fp[fi], half_deposits: hd }; return { ...f, feature_panels: fp };
+  });
+  // Half deposit specimens
+  const uhdSpec = (fi: number, di: number, ri: number, key: string, val: string) => setForm(f => {
+    const fp = [...f.feature_panels];
+    const hd = [...fp[fi].half_deposits];
+    const sp = [...hd[di].specimens]; sp[ri] = { ...sp[ri], [key]: val };
+    hd[di] = { ...hd[di], specimens: sp };
+    fp[fi] = { ...fp[fi], half_deposits: hd }; return { ...f, feature_panels: fp };
+  });
+  const addHdSpec = (fi: number, di: number) => setForm(f => {
+    const fp = [...f.feature_panels];
+    const hd = [...fp[fi].half_deposits]; hd[di] = { ...hd[di], specimens: [...hd[di].specimens, emptySpecimen()] };
+    fp[fi] = { ...fp[fi], half_deposits: hd }; return { ...f, feature_panels: fp };
+  });
+  const delHdSpec = (fi: number, di: number, ri: number) => setForm(f => {
+    const fp = [...f.feature_panels];
+    const hd = [...fp[fi].half_deposits]; hd[di] = { ...hd[di], specimens: hd[di].specimens.filter((_, i) => i !== ri) };
+    fp[fi] = { ...fp[fi], half_deposits: hd }; return { ...f, feature_panels: fp };
   });
 
   // Complete deposit helpers
@@ -215,10 +341,59 @@ function DiaryContent() {
     const cd = [...fp[fi].complete_deposits]; cd[di] = { ...cd[di], inclusions: cd[di].inclusions.filter((_, i) => i !== ri) };
     fp[fi] = { ...fp[fi], complete_deposits: cd }; return { ...f, feature_panels: fp };
   });
+  // Complete deposit artifacts
+  const ucdArt = (fi: number, di: number, ri: number, key: string, val: string) => setForm(f => {
+    const fp = [...f.feature_panels];
+    const cd = [...fp[fi].complete_deposits];
+    const arts = [...cd[di].artifacts_found]; arts[ri] = { ...arts[ri], [key]: val };
+    cd[di] = { ...cd[di], artifacts_found: arts };
+    fp[fi] = { ...fp[fi], complete_deposits: cd }; return { ...f, feature_panels: fp };
+  });
+  const addCdArt = (fi: number, di: number) => setForm(f => {
+    const fp = [...f.feature_panels];
+    const cd = [...fp[fi].complete_deposits]; cd[di] = { ...cd[di], artifacts_found: [...cd[di].artifacts_found, emptyArtifact()] };
+    fp[fi] = { ...fp[fi], complete_deposits: cd }; return { ...f, feature_panels: fp };
+  });
+  const delCdArt = (fi: number, di: number, ri: number) => setForm(f => {
+    const fp = [...f.feature_panels];
+    const cd = [...fp[fi].complete_deposits]; cd[di] = { ...cd[di], artifacts_found: cd[di].artifacts_found.filter((_, i) => i !== ri) };
+    fp[fi] = { ...fp[fi], complete_deposits: cd }; return { ...f, feature_panels: fp };
+  });
+  // Complete deposit specimens
+  const ucdSpec = (fi: number, di: number, ri: number, key: string, val: string) => setForm(f => {
+    const fp = [...f.feature_panels];
+    const cd = [...fp[fi].complete_deposits];
+    const sp = [...cd[di].specimens]; sp[ri] = { ...sp[ri], [key]: val };
+    cd[di] = { ...cd[di], specimens: sp };
+    fp[fi] = { ...fp[fi], complete_deposits: cd }; return { ...f, feature_panels: fp };
+  });
+  const addCdSpec = (fi: number, di: number) => setForm(f => {
+    const fp = [...f.feature_panels];
+    const cd = [...fp[fi].complete_deposits]; cd[di] = { ...cd[di], specimens: [...cd[di].specimens, emptySpecimen()] };
+    fp[fi] = { ...fp[fi], complete_deposits: cd }; return { ...f, feature_panels: fp };
+  });
+  const delCdSpec = (fi: number, di: number, ri: number) => setForm(f => {
+    const fp = [...f.feature_panels];
+    const cd = [...fp[fi].complete_deposits]; cd[di] = { ...cd[di], specimens: cd[di].specimens.filter((_, i) => i !== ri) };
+    fp[fi] = { ...fp[fi], complete_deposits: cd }; return { ...f, feature_panels: fp };
+  });
+
+  // File upload for diagram
+  const handleDiagramUpload = async (fi: number, file: File) => {
+    const key = `diagram-${fi}`;
+    setUploading(prev => ({ ...prev, [key]: true }));
+    const fd = new FormData(); fd.append('file', file);
+    const res = await fetch('/api/upload', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (data.path) uf(fi, 'stratigraphy_diagram', data.path);
+    else alert(data.error || '上传失败');
+    setUploading(prev => ({ ...prev, [key]: false }));
+  };
 
   // Validation
   const validate = (): string | null => {
     if (!form.diary_date) return '请填写日期';
+    if (!form.weather) return '请填写天气';
     if (!form.wind_direction) return '请填写风向';
     if (!form.humidity) return '请填写湿度';
     if (!form.trench_number) return '请填写探方编号';
@@ -234,42 +409,186 @@ function DiaryContent() {
         if (!lp.layer_number) return `${n}请填写层位编号`;
         if (!lp.excavate_direction) return `${n}请填写发掘方向`;
         if (!lp.work_progress) return `${n}请填写工作进度`;
-        if (!lp.excavate_time_start || !lp.excavate_time_end) return `${n}请填写发掘时间区间`;
+        if (!lp.excavate_time_start) return `${n}请填写开始时间`;
+        if (!lp.excavate_time_end) return `${n}请填写结束时间`;
+        if (!lp.excavate_method) return `${n}请填写发掘方法`;
+        if (!lp.excavate_tool) return `${n}请填写使用工具`;
+        if (!lp.use_sieve) return `${n}请选择是否过筛`;
         if (!lp.soil_texture) return `${n}请填写土质`;
         if (!lp.soil_color) return `${n}请填写土色`;
-        if (!lp.corner_depth_ne && !lp.corner_depth_se && !lp.corner_depth_sw && !lp.corner_depth_nw) return `${n}请填写四角发掘深度`;
-        if (lp.has_special_feature === '是' && !lp.special_feature_desc) return `${n}请描述特殊遗迹现象`;
+        if (!lp.soil_density) return `${n}请选择致密度`;
         for (let j = 0; j < lp.inclusions.length; j++) {
           const inc = lp.inclusions[j];
-          if (!inc.type || !inc.proportion || !inc.particleSize) return `${n}包含物${j + 1}：请完整填写`;
+          if (!inc.type || !inc.proportion || !inc.particleSize) return `${n}包含物${j + 1}：请完整填写种类、比例、粒径`;
         }
         for (let j = 0; j < lp.artifacts_found.length; j++) {
           const art = lp.artifacts_found[j];
-          if (!art.type || !art.quantity || !art.number) return `${n}出土物${j + 1}：请完整填写`;
+          if (!art.type || !art.quantity || !art.number) return `${n}出土物${j + 1}：请完整填写种类、数量、编号`;
         }
+        for (let j = 0; j < lp.specimens.length; j++) {
+          const sp = lp.specimens[j];
+          if (!sp.number || !sp.category || !sp.quantity) return `${n}标本${j + 1}：请完整填写编号、类别、数量`;
+        }
+        if (!lp.corner_depth_ne && !lp.corner_depth_se && !lp.corner_depth_sw && !lp.corner_depth_nw) return `${n}请填写四角发掘深度`;
+        if (lp.has_special_feature === '是' && !lp.special_feature_desc) return `${n}请描述特殊遗迹现象`;
         if (lp.layer_completed === '是') {
           if (!lp.layer_thickness) return `${n}请填写地层厚度`;
           if (!lp.upper_interface_shape) return `${n}请选择堆积上界面形状`;
           if (!lp.lower_interface_shape) return `${n}请选择堆积下界面形状`;
         }
+        if (lp.has_small_find === '是') {
+          for (let j = 0; j < lp.small_finds.length; j++) {
+            const sf = lp.small_finds[j];
+            if (!sf.number || !sf.category || !sf.coordinate || !sf.location) return `${n}小件${j + 1}：请完整填写编号、类别、坐标、入库位置`;
+          }
+        }
       }
     }
+
     if (form.has_scraping) {
+      if (!form.scrape_time_start) return '刮面：请填写开始时间';
+      if (!form.scrape_time_end) return '刮面：请填写结束时间';
       if (!form.scrape_progress) return '刮面：请选择工作进度';
       if (!form.scrape_direction) return '刮面：请填写方向';
       if (!form.scrape_observation) return '刮面：请填写发现现象描述';
     }
+
     if (form.has_feature_excavation) {
       for (let i = 0; i < form.feature_panels.length; i++) {
         const fp = form.feature_panels[i]; const n = form.feature_panels.length > 1 ? `遗迹${i + 1}：` : '';
         if (!fp.feature_number) return `${n}请填写遗迹编号`;
+        if (!fp.feature_type) return `${n}请选择遗迹类型`;
         if (!fp.feature_opening) return `${n}请填写开口层位`;
         if (!fp.break_relation) return `${n}请填写打破关系`;
+        if (!fp.shape) return `${n}请选择平面形状`;
         if (!fp.dimensions) return `${n}请填写尺寸`;
+        if (!fp.excavate_method) return `${n}请选择发掘方法`;
         if (!fp.section_dir) return `${n}请填写解剖方向`;
+        if (!fp.complete_status) return `${n}请选择完工状态`;
+
+        if (fp.complete_status !== '全部清理完成') {
+          for (let j = 0; j < fp.half_deposits.length; j++) {
+            const hd = fp.half_deposits[j]; const dn = fp.half_deposits.length > 1 ? `堆积${j + 1}：` : '';
+            if (!hd.layer) return `${n}${dn}请填写层位`;
+            if (!hd.soil_texture) return `${n}${dn}请填写土质`;
+            if (!hd.soil_color) return `${n}${dn}请填写土色`;
+            if (!hd.soil_density) return `${n}${dn}请选择致密度`;
+            for (let k = 0; k < hd.inclusions.length; k++) {
+              const inc = hd.inclusions[k];
+              if (!inc.type || !inc.proportion || !inc.particleSize) return `${n}${dn}包含物${k + 1}：请完整填写`;
+            }
+            for (let k = 0; k < hd.artifacts_found.length; k++) {
+              const art = hd.artifacts_found[k];
+              if (!art.type || !art.quantity || !art.number) return `${n}${dn}出土物${k + 1}：请完整填写`;
+            }
+            for (let k = 0; k < hd.specimens.length; k++) {
+              const sp = hd.specimens[k];
+              if (!sp.number || !sp.category || !sp.quantity) return `${n}${dn}标本${k + 1}：请完整填写`;
+            }
+          }
+        } else {
+          if (!fp.mouth_clarity) return `${n}请选择口部`;
+          if (!fp.profile_wall) return `${n}请选择剖面壁部`;
+          if (!fp.profile_bottom) return `${n}请选择剖面底部`;
+          if (!fp.wall_desc) return `${n}请填写壁面描述`;
+          if (!fp.bottom_clarity) return `${n}请选择底部`;
+          if (!fp.bottom_desc) return `${n}请填写底面描述`;
+          for (let j = 0; j < fp.complete_deposits.length; j++) {
+            const cd = fp.complete_deposits[j]; const dn = fp.complete_deposits.length > 1 ? `堆积${j + 1}：` : '';
+            if (!cd.layer) return `${n}${dn}请填写层位`;
+            if (!cd.texture) return `${n}${dn}请填写土质`;
+            if (!cd.color) return `${n}${dn}请填写土色`;
+            if (!cd.density) return `${n}${dn}请选择致密度`;
+            for (let k = 0; k < cd.inclusions.length; k++) {
+              const inc = cd.inclusions[k];
+              if (!inc.type || !inc.proportion || !inc.particleSize) return `${n}${dn}包含物${k + 1}：请完整填写`;
+            }
+            for (let k = 0; k < cd.artifacts_found.length; k++) {
+              const art = cd.artifacts_found[k];
+              if (!art.type || !art.quantity || !art.number) return `${n}${dn}出土物${k + 1}：请完整填写`;
+            }
+            for (let k = 0; k < cd.specimens.length; k++) {
+              const sp = cd.specimens[k];
+              if (!sp.number || !sp.category || !sp.quantity) return `${n}${dn}标本${k + 1}：请完整填写`;
+            }
+          }
+        }
+        if (fp.has_small_find === '是') {
+          for (let j = 0; j < fp.small_finds.length; j++) {
+            const sf = fp.small_finds[j];
+            if (!sf.number || !sf.category || !sf.coordinate || !sf.location) return `${n}小件${j + 1}：请完整填写编号、类别、坐标、入库位置`;
+          }
+        }
       }
     }
+
+    if (!form.work_summary) return '请填写工作总结与反思';
+    if (!form.tomorrow_plan) return '请填写明日计划';
     return null;
+  };
+
+  // Collect specimens for auto-summary
+  const collectSpecimens = () => {
+    const parts: string[] = [];
+    if (form.has_layer_excavation) {
+      form.layer_panels.forEach((lp, i) => {
+        const label = form.layer_panels.length > 1 ? `${lp.layer_number}层` : '';
+        lp.specimens.filter(s => s.number).forEach(s => {
+          parts.push(`${label}标本${s.number}（${s.category}，${s.quantity}）`);
+        });
+        lp.artifacts_found.filter(a => a.number).forEach(a => {
+          parts.push(`${label}出土物${a.number}（${a.type}，${a.quantity}）`);
+        });
+      });
+    }
+    if (form.has_feature_excavation) {
+      form.feature_panels.forEach(fp => {
+        const label = fp.feature_number;
+        if (fp.complete_status !== '全部清理完成') {
+          fp.half_deposits.forEach(hd => {
+            hd.specimens.filter(s => s.number).forEach(s => {
+              parts.push(`${label}${hd.layer}层标本${s.number}（${s.category}，${s.quantity}）`);
+            });
+            hd.artifacts_found.filter(a => a.number).forEach(a => {
+              parts.push(`${label}${hd.layer}层出土物${a.number}（${a.type}，${a.quantity}）`);
+            });
+          });
+        } else {
+          fp.complete_deposits.forEach(cd => {
+            cd.specimens.filter(s => s.number).forEach(s => {
+              parts.push(`${label}${cd.layer}层标本${s.number}（${s.category}，${s.quantity}）`);
+            });
+            cd.artifacts_found.filter(a => a.number).forEach(a => {
+              parts.push(`${label}${cd.layer}层出土物${a.number}（${a.type}，${a.quantity}）`);
+            });
+          });
+        }
+      });
+    }
+    return parts.join('\n');
+  };
+
+  const collectSmallFinds = () => {
+    const parts: string[] = [];
+    const add = (label: string, sf: SmallFindRow) => {
+      parts.push(`${label}小件${sf.number}（${sf.category}，坐标${sf.coordinate}，入库${sf.location}）`);
+    };
+    if (form.has_layer_excavation) {
+      form.layer_panels.forEach((lp, i) => {
+        if (lp.has_small_find === '是') {
+          const label = form.layer_panels.length > 1 ? `${lp.layer_number}层` : '';
+          lp.small_finds.filter(s => s.number).forEach(s => add(label, s));
+        }
+      });
+    }
+    if (form.has_feature_excavation) {
+      form.feature_panels.forEach(fp => {
+        if (fp.has_small_find === '是') {
+          fp.small_finds.filter(s => s.number).forEach(s => add(fp.feature_number, s));
+        }
+      });
+    }
+    return parts.join('\n');
   };
 
   // Generate diary text
@@ -296,9 +615,8 @@ function DiaryContent() {
         lines.push(`今日继续发掘${lp.layer_number}层。发掘方向${lp.excavate_direction}，工作进度：${lp.work_progress}。`);
         lines.push(`${lp.excavate_time_start}至${lp.excavate_time_end}，按照${lp.excavate_method}，使用${lp.excavate_tool}对${lp.layer_number}层进行清理。${lp.use_sieve === '是' ? `对${lp.layer_number}层堆积用筛网进行筛选，尽可能仔细地收集出土遗物。` : `并未对${lp.layer_number}层堆积用筛网进行筛选，尽可能仔细地收集出土遗物。`}`);
 
-        const densityMap: Record<string, string> = { '疏松': '疏松', '较疏松': '较疏松', '致密': '致密', '较致密': '较致密' };
         const soilDesc = [lp.soil_color, lp.soil_texture].filter(Boolean).join('');
-        lines.push(`${lp.layer_number}层为${soilDesc}，${densityMap[lp.soil_density] || lp.soil_density}。`);
+        lines.push(`${lp.layer_number}层为${soilDesc}，${lp.soil_density}。`);
 
         if (lp.inclusions.some(inc => inc.type)) {
           const incStrs = lp.inclusions.filter(inc => inc.type).map(inc =>
@@ -310,6 +628,11 @@ function DiaryContent() {
         if (lp.artifacts_found.some(a => a.type)) {
           const artStrs = lp.artifacts_found.filter(a => a.type).map(a => `${a.type}${a.quantity}，编号${a.number}`);
           lines.push(`出土物：${artStrs.join('；')}。`);
+        }
+
+        if (lp.specimens.some(s => s.number)) {
+          const spStrs = lp.specimens.filter(s => s.number).map(s => `标本${s.number}（${s.category}，${s.quantity}）`);
+          lines.push(`采集标本：${spStrs.join('；')}。`);
         }
 
         if (lp.has_special_feature === '是' && lp.special_feature_desc) {
@@ -324,12 +647,21 @@ function DiaryContent() {
           const sumParts = [`${lp.layer_number}层水平分布于全方`];
           if (lp.layer_thickness) sumParts.push(`厚${lp.layer_thickness}cm`);
           if (soilDesc) sumParts.push(`为${soilDesc}`);
-          sumParts.push(`${densityMap[lp.soil_density] || lp.soil_density}`);
+          sumParts.push(`${lp.soil_density}`);
           if (lp.upper_interface_shape) sumParts.push(`上界面呈${lp.upper_interface_shape}`);
           if (lp.lower_interface_shape) sumParts.push(`下界面呈${lp.lower_interface_shape}`);
           if (lp.layer_nature) sumParts.push(`应为${lp.layer_nature}`);
           lines.push(`${lp.layer_number}层小结：${sumParts.join('，')}。`);
         }
+
+        // Small finds for this layer
+        if (lp.has_small_find === '是' && lp.small_finds.some(s => s.number)) {
+          const sfStrs = lp.small_finds.filter(s => s.number).map(s =>
+            `小件${s.number}（${s.category}，坐标${s.coordinate}，入库${s.location}）`
+          );
+          lines.push(`采集小件：${sfStrs.join('；')}。`);
+        }
+
         lines.push('');
       }
     }
@@ -339,8 +671,8 @@ function DiaryContent() {
       const secLabels = ['一', '二', '三', '四'];
       const si = [form.has_layer_excavation].filter(Boolean).length;
       lines.push(`${secLabels[si]}、刮面`);
-      lines.push(`对探方进行刮面（${form.scrape_progress}），方向${form.scrape_direction}。`);
-      lines.push(`刮面后发现：${form.scrape_observation || '未发现明显遗迹现象。'}`);
+      lines.push(`${form.scrape_time_start}至${form.scrape_time_end}，对探方进行刮面（${form.scrape_progress}），方向${form.scrape_direction}。`);
+      lines.push(`刮面后发现：${form.scrape_observation}`);
       lines.push('');
     }
 
@@ -365,7 +697,6 @@ function DiaryContent() {
             lines.push(`柱洞倾斜角${fp.posthole_angle || '?'}°，方向${fp.posthole_direction || '?'}。`);
           }
 
-          // Complete deposit layers
           for (const cd of fp.complete_deposits) {
             if (!cd.layer && !cd.texture) continue;
             const cdSoil = [cd.color, cd.texture].filter(Boolean).join('');
@@ -376,45 +707,75 @@ function DiaryContent() {
               );
               lines.push(`包含物：${incStrs.join('；')}。`);
             }
-            if (cd.specimen) lines.push(`标本采集：${cd.specimen}。`);
-            if (cd.artifacts) lines.push(`出土遗物：${cd.artifacts}。`);
+            if (cd.artifacts_found.some(a => a.type)) {
+              const artStrs = cd.artifacts_found.filter(a => a.type).map(a => `${a.type}${a.quantity}，编号${a.number}`);
+              lines.push(`出土物：${artStrs.join('；')}。`);
+            }
+            if (cd.specimens.some(s => s.number)) {
+              const spStrs = cd.specimens.filter(s => s.number).map(s => `标本${s.number}（${s.category}，${s.quantity}）`);
+              lines.push(`采集标本：${spStrs.join('；')}。`);
+            }
             if (cd.soil_sample) lines.push(`土样采集：${cd.soil_sample}。`);
             if (cd.observation) lines.push(`观察记录：${cd.observation}。`);
           }
 
           if (fp.stratigraphy_diagram) lines.push(`层位关系系络图：${fp.stratigraphy_diagram}。`);
 
-          // Feature summary
           lines.push('');
           lines.push(`${fp.feature_number}小结：`);
           lines.push(`位置与层位：${fp.feature_number}位于探方内，开口于${fp.feature_opening}层下${fp.break_relation !== '无' ? `，${fp.break_relation}` : ''}。`);
           lines.push(`形状与尺寸：平面呈${fp.shape}，${fp.dimensions}。剖面壁部${fp.profile_wall}，底部${fp.profile_bottom}。口部${fp.mouth_clarity}，底部${fp.bottom_clarity}。`);
         } else {
-          // Half complete
           for (const hd of fp.half_deposits) {
-            if (!hd.layer && !hd.texture) continue;
-            const hdSoil = [hd.color, hd.texture].filter(Boolean).join('');
-            lines.push(`清理${hd.layer}层：${hdSoil}${hd.thickness ? `，厚${hd.thickness}cm` : ''}。上界面呈${hd.upper_interface || '水平状'}，下界面呈${hd.lower_interface || '水平状'}。`);
-            if (hd.inclusions) lines.push(`包含物：${hd.inclusions}。`);
-            if (hd.specimen) lines.push(`标本采集：${hd.specimen}。`);
-            if (hd.artifacts) lines.push(`出土遗物：${hd.artifacts}。`);
+            if (!hd.layer && !hd.soil_texture) continue;
+            const hdSoil = [hd.soil_color, hd.soil_texture].filter(Boolean).join('');
+            lines.push(`清理${hd.layer}层：${hdSoil}，${hd.soil_density}${hd.thickness ? `，厚${hd.thickness}cm` : ''}。上界面呈${hd.upper_interface || '水平状'}，下界面呈${hd.lower_interface || '水平状'}。`);
+            if (hd.inclusions.some(inc => inc.type)) {
+              const incStrs = hd.inclusions.filter(inc => inc.type).map(inc =>
+                `${inc.type}（${inc.proportion}，粒径${inc.particleSize}cm，分选${inc.sorting}，${inc.roundness}）`
+              );
+              lines.push(`包含物：${incStrs.join('；')}。`);
+            }
+            if (hd.artifacts_found.some(a => a.type)) {
+              const artStrs = hd.artifacts_found.filter(a => a.type).map(a => `${a.type}${a.quantity}，编号${a.number}`);
+              lines.push(`出土物：${artStrs.join('；')}。`);
+            }
+            if (hd.specimens.some(s => s.number)) {
+              const spStrs = hd.specimens.filter(s => s.number).map(s => `标本${s.number}（${s.category}，${s.quantity}）`);
+              lines.push(`采集标本：${spStrs.join('；')}。`);
+            }
             if (hd.soil_sample) lines.push(`土样采集：${hd.soil_sample}。`);
           }
           if (fp.special_observation) lines.push(`清理过程中特殊现象观察记录：${fp.special_observation}。`);
           lines.push(`${fp.feature_number}${fp.complete_status}。`);
         }
+
+        // Small finds for this feature
+        if (fp.has_small_find === '是' && fp.small_finds.some(s => s.number)) {
+          const sfStrs = fp.small_finds.filter(s => s.number).map(s =>
+            `小件${s.number}（${s.category}，坐标${s.coordinate}，入库${s.location}）`
+          );
+          lines.push(`采集小件：${sfStrs.join('；')}。`);
+        }
+
         lines.push('');
       }
     }
 
-    // Summary
+    // Summary with auto-collected specimens and small finds
     const si = [form.has_layer_excavation, form.has_scraping, form.has_feature_excavation].filter(Boolean).length;
     const secLabels = ['一', '二', '三', '四'];
     lines.push(`${secLabels[si]}、总结与计划`);
-    if (form.work_summary) lines.push(`工作总结与反思：${form.work_summary}`);
-    if (form.tomorrow_plan) lines.push(`明日计划：${form.tomorrow_plan}`);
-    if (form.specimen_register) lines.push(`当天采集标本：${form.specimen_register}`);
-    if (form.small_finds_register) lines.push(`当天出土小件登记：${form.small_finds_register}`);
+    lines.push(`工作总结与反思：${form.work_summary}`);
+    lines.push(`明日计划：${form.tomorrow_plan}`);
+
+    const autoSpecimens = collectSpecimens();
+    const autoSmallFinds = collectSmallFinds();
+    if (autoSpecimens) lines.push(`当天采集标本：\n${autoSpecimens}`);
+    else if (form.specimen_register) lines.push(`当天采集标本：${form.specimen_register}`);
+    if (autoSmallFinds) lines.push(`当天出土小件登记：\n${autoSmallFinds}`);
+    else if (form.small_finds_register) lines.push(`当天出土小件登记：${form.small_finds_register}`);
+
     if (form.recorder) { lines.push(''); lines.push(`记录人：${form.recorder}`); }
 
     setGeneratedText(lines.join('\n'));
@@ -459,13 +820,13 @@ function DiaryContent() {
   const ifShapeOpts = ['水平状', '坡状', '波状', '凸镜状', '凹镜状', '其它'];
   const sortOpts = ['好', '一般', '较差', '极不均匀'];
   const roundOpts = ['棱角的', '较有棱角的', '略有棱角的', '略圆滑的', '圆滑的', '很圆滑的'];
+  const weatherOpts = ['晴', '阴', '雨', '多云', '晴转雨', '雨转晴', '雨转多云'];
 
-  // Reusable inclusion row renderer
-  const renderInclusionRow = (inc: InclusionRow, pi: number, ri: number, onChange: (ri: number, key: string, val: string) => void, onDel: (ri: number) => void, showDel: boolean) => (
+  const renderInclusionRow = (inc: InclusionRow, ri: number, onChange: (ri: number, key: string, val: string) => void, onDel: (ri: number) => void, showDel: boolean) => (
     <div key={ri} className="grid grid-cols-5 gap-1.5 mb-1.5 items-end">
-      <div><input value={inc.type} onChange={e => onChange(ri, 'type', e.target.value)} className={inp} placeholder="种类（如烧土）" /></div>
-      <div><input value={inc.proportion} onChange={e => onChange(ri, 'proportion', e.target.value)} className={inp} placeholder="比例（0%-70%）" /></div>
-      <div><input value={inc.particleSize} onChange={e => onChange(ri, 'particleSize', e.target.value)} className={inp} placeholder="粒径（X~Xcm）" /></div>
+      <div><input value={inc.type} onChange={e => onChange(ri, 'type', e.target.value)} className={inp} placeholder="种类" /></div>
+      <div><input value={inc.proportion} onChange={e => onChange(ri, 'proportion', e.target.value)} className={inp} placeholder="比例" /></div>
+      <div><input value={inc.particleSize} onChange={e => onChange(ri, 'particleSize', e.target.value)} className={inp} placeholder="粒径cm" /></div>
       <div><select value={inc.sorting} onChange={e => onChange(ri, 'sorting', e.target.value)} className={inp}>{sortOpts.map(o => <option key={o}>{o}</option>)}</select></div>
       <div className="flex gap-1">
         <select value={inc.roundness} onChange={e => onChange(ri, 'roundness', e.target.value)} className={inp}>{roundOpts.map(o => <option key={o}>{o}</option>)}</select>
@@ -474,13 +835,35 @@ function DiaryContent() {
     </div>
   );
 
-  // Reusable artifact row renderer
-  const renderArtifactRow = (art: ArtifactRow, pi: number, ri: number, onChange: (ri: number, key: string, val: string) => void, onDel: (ri: number) => void, showDel: boolean) => (
+  const renderArtifactRow = (art: ArtifactRow, ri: number, onChange: (ri: number, key: string, val: string) => void, onDel: (ri: number) => void, showDel: boolean) => (
     <div key={ri} className="grid grid-cols-3 gap-1.5 mb-1.5 items-end">
-      <div><input value={art.type} onChange={e => onChange(ri, 'type', e.target.value)} className={inp} placeholder="种类（陶片/瓷片/骨骼等）" /></div>
-      <div><input value={art.quantity} onChange={e => onChange(ri, 'quantity', e.target.value)} className={inp} placeholder="数量（如1袋）" /></div>
+      <div><input value={art.type} onChange={e => onChange(ri, 'type', e.target.value)} className={inp} placeholder="种类" /></div>
+      <div><input value={art.quantity} onChange={e => onChange(ri, 'quantity', e.target.value)} className={inp} placeholder="数量" /></div>
       <div className="flex gap-1">
-        <input value={art.number} onChange={e => onChange(ri, 'number', e.target.value)} className={inp} placeholder="编号（如1, 2, 或1~2）" />
+        <input value={art.number} onChange={e => onChange(ri, 'number', e.target.value)} className={inp} placeholder="编号" />
+        {showDel && <button type="button" onClick={() => onDel(ri)} className="text-red-500 text-xs shrink-0">✕</button>}
+      </div>
+    </div>
+  );
+
+  const renderSpecimenRow = (sp: SpecimenRow, ri: number, onChange: (ri: number, key: string, val: string) => void, onDel: (ri: number) => void, showDel: boolean) => (
+    <div key={ri} className="grid grid-cols-3 gap-1.5 mb-1.5 items-end">
+      <div><input value={sp.number} onChange={e => onChange(ri, 'number', e.target.value)} className={inp} placeholder="编号" /></div>
+      <div><input value={sp.category} onChange={e => onChange(ri, 'category', e.target.value)} className={inp} placeholder="类别（土样/陶片/骨骼/炭样）" /></div>
+      <div className="flex gap-1">
+        <input value={sp.quantity} onChange={e => onChange(ri, 'quantity', e.target.value)} className={inp} placeholder="数量" />
+        {showDel && <button type="button" onClick={() => onDel(ri)} className="text-red-500 text-xs shrink-0">✕</button>}
+      </div>
+    </div>
+  );
+
+  const renderSmallFindRow = (sf: SmallFindRow, ri: number, onChange: (ri: number, key: string, val: string) => void, onDel: (ri: number) => void, showDel: boolean) => (
+    <div key={ri} className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 mb-1.5 items-end">
+      <div><input value={sf.number} onChange={e => onChange(ri, 'number', e.target.value)} className={inp} placeholder="小件编号" /></div>
+      <div><input value={sf.category} onChange={e => onChange(ri, 'category', e.target.value)} className={inp} placeholder="类别" /></div>
+      <div><input value={sf.coordinate} onChange={e => onChange(ri, 'coordinate', e.target.value)} className={inp} placeholder="出土坐标" /></div>
+      <div className="flex gap-1">
+        <input value={sf.location} onChange={e => onChange(ri, 'location', e.target.value)} className={inp} placeholder="入库位置" />
         {showDel && <button type="button" onClick={() => onDel(ri)} className="text-red-500 text-xs shrink-0">✕</button>}
       </div>
     </div>
@@ -495,7 +878,7 @@ function DiaryContent() {
         <div className="px-5 py-3 border-b border-stone-100 text-sm font-medium text-stone-700">📋 基本信息</div>
         <div className="px-5 py-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
           <div><label className={lbl}>日期{req}</label><input type="date" value={form.diary_date} onChange={e => u('diary_date', e.target.value)} className={inp} /></div>
-          <div><label className={lbl}>天气{req}</label><select value={form.weather} onChange={e => u('weather', e.target.value)} className={inp}><option>晴</option><option>阴</option><option>雨</option><option>多云</option></select></div>
+          <div><label className={lbl}>天气{req}</label><select value={form.weather} onChange={e => u('weather', e.target.value)} className={inp}>{weatherOpts.map(o => <option key={o}>{o}</option>)}</select></div>
           <div><label className={lbl}>风向{req}</label><input value={form.wind_direction} onChange={e => u('wind_direction', e.target.value)} className={inp} placeholder="北风、东南风" /></div>
           <div><label className={lbl}>湿度{req}</label><input value={form.humidity} onChange={e => u('humidity', e.target.value)} className={inp} placeholder="65%" /></div>
           <div><label className={lbl}>探方编号{req}</label><input value={form.trench_number} onChange={e => u('trench_number', e.target.value)} className={inp} placeholder="T0101" /></div>
@@ -547,14 +930,14 @@ function DiaryContent() {
                       <div><label className={lbl}>层位编号{req}</label><input value={lp.layer_number} onChange={e => ul(pi, 'layer_number', e.target.value)} className={inp} /></div>
                       <div><label className={lbl}>发掘方向{req}</label><input value={lp.excavate_direction} onChange={e => ul(pi, 'excavate_direction', e.target.value)} className={inp} placeholder="从北向南" /></div>
                       <div><label className={lbl}>工作进度{req}</label><input value={lp.work_progress} onChange={e => ul(pi, 'work_progress', e.target.value)} className={inp} placeholder="完成北部二分之一" /></div>
-                      <div><label className={lbl}>发掘方法</label><input value={lp.excavate_method} onChange={e => ul(pi, 'excavate_method', e.target.value)} className={inp} /></div>
+                      <div><label className={lbl}>发掘方法{req}</label><input value={lp.excavate_method} onChange={e => ul(pi, 'excavate_method', e.target.value)} className={inp} /></div>
                       <div><label className={lbl}>开始时间{req}</label><input type="time" value={lp.excavate_time_start} onChange={e => ul(pi, 'excavate_time_start', e.target.value)} className={inp} /></div>
                       <div><label className={lbl}>结束时间{req}</label><input type="time" value={lp.excavate_time_end} onChange={e => ul(pi, 'excavate_time_end', e.target.value)} className={inp} /></div>
-                      <div><label className={lbl}>使用工具</label><input value={lp.excavate_tool} onChange={e => ul(pi, 'excavate_tool', e.target.value)} className={inp} /></div>
-                      <div><label className={lbl}>是否过筛</label><select value={lp.use_sieve} onChange={e => ul(pi, 'use_sieve', e.target.value)} className={inp}><option>否</option><option>是</option></select></div>
+                      <div><label className={lbl}>使用工具{req}</label><input value={lp.excavate_tool} onChange={e => ul(pi, 'excavate_tool', e.target.value)} className={inp} /></div>
+                      <div><label className={lbl}>是否过筛{req}</label><select value={lp.use_sieve} onChange={e => ul(pi, 'use_sieve', e.target.value)} className={inp}><option>否</option><option>是</option></select></div>
                       <div><label className={lbl}>土色{req}</label><input value={lp.soil_color} onChange={e => ul(pi, 'soil_color', e.target.value)} className={inp} placeholder="浅褐色" /></div>
                       <div><label className={lbl}>土质{req}</label><input value={lp.soil_texture} onChange={e => ul(pi, 'soil_texture', e.target.value)} className={inp} placeholder="粗沙土" /></div>
-                      <div><label className={lbl}>致密度</label><select value={lp.soil_density} onChange={e => ul(pi, 'soil_density', e.target.value)} className={inp}>{densityOpts.map(o => <option key={o}>{o}</option>)}</select></div>
+                      <div><label className={lbl}>致密度{req}</label><select value={lp.soil_density} onChange={e => ul(pi, 'soil_density', e.target.value)} className={inp}>{densityOpts.map(o => <option key={o}>{o}</option>)}</select></div>
                     </div>
 
                     {/* Inclusions table */}
@@ -566,7 +949,7 @@ function DiaryContent() {
                       <div className="grid grid-cols-5 gap-1.5 mb-1 text-xs text-stone-400 px-1">
                         <span>种类</span><span>比例</span><span>粒径(cm)</span><span>分选度</span><span>圆整度</span>
                       </div>
-                      {lp.inclusions.map((inc, ri) => renderInclusionRow(inc, pi, ri, (ri, k, v) => ulInc(pi, ri, k, v), (ri) => delLayerInc(pi, ri), lp.inclusions.length > 1))}
+                      {lp.inclusions.map((inc, ri) => renderInclusionRow(inc, ri, (ri, k, v) => ulInc(pi, ri, k, v), (ri) => delLayerInc(pi, ri), lp.inclusions.length > 1))}
                     </div>
 
                     {/* Artifacts table */}
@@ -578,11 +961,23 @@ function DiaryContent() {
                       <div className="grid grid-cols-3 gap-1.5 mb-1 text-xs text-stone-400 px-1">
                         <span>种类</span><span>数量</span><span>编号</span>
                       </div>
-                      {lp.artifacts_found.map((art, ri) => renderArtifactRow(art, pi, ri, (ri, k, v) => ulArt(pi, ri, k, v), (ri) => delLayerArt(pi, ri), lp.artifacts_found.length > 1))}
+                      {lp.artifacts_found.map((art, ri) => renderArtifactRow(art, ri, (ri, k, v) => ulArt(pi, ri, k, v), (ri) => delLayerArt(pi, ri), lp.artifacts_found.length > 1))}
+                    </div>
+
+                    {/* Specimen table */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className={lbl}>采集标本{req}</label>
+                        <button type="button" onClick={() => addLayerSpec(pi)} className="text-xs text-amber-700 hover:text-amber-800">+ 添加标本</button>
+                      </div>
+                      <div className="grid grid-cols-3 gap-1.5 mb-1 text-xs text-stone-400 px-1">
+                        <span>标本编号</span><span>类别</span><span>数量</span>
+                      </div>
+                      {lp.specimens.map((sp, ri) => renderSpecimenRow(sp, ri, (ri, k, v) => ulSpec(pi, ri, k, v), (ri) => delLayerSpec(pi, ri), lp.specimens.length > 1))}
                     </div>
 
                     <div>
-                      <label className={lbl}>是否发现特殊遗迹现象</label>
+                      <label className={lbl}>是否发现特殊遗迹现象{req}</label>
                       <select value={lp.has_special_feature} onChange={e => ul(pi, 'has_special_feature', e.target.value)} className={`${inp} w-24`}><option>否</option><option>是</option></select>
                       {lp.has_special_feature === '是' && <textarea value={lp.special_feature_desc} onChange={e => ul(pi, 'special_feature_desc', e.target.value)} className={`${inp} mt-2`} rows={2} placeholder="请描述发现的特殊遗迹现象…" />}
                     </div>
@@ -598,14 +993,32 @@ function DiaryContent() {
                     </div>
 
                     <div>
-                      <label className={lbl}>该层是否已发掘完毕</label>
+                      <label className={lbl}>该层是否已发掘完毕{req}</label>
                       <select value={lp.layer_completed} onChange={e => ul(pi, 'layer_completed', e.target.value)} className={`${inp} w-24`}><option>否</option><option>是</option></select>
                       {lp.layer_completed === '是' && (
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-2">
                           <div><label className={lbl}>地层厚度{req}</label><input value={lp.layer_thickness} onChange={e => ul(pi, 'layer_thickness', e.target.value)} className={inp} placeholder="X~X cm" /></div>
                           <div><label className={lbl}>堆积上界面形状{req}</label><select value={lp.upper_interface_shape} onChange={e => ul(pi, 'upper_interface_shape', e.target.value)} className={inp}>{ifShapeOpts.map(o => <option key={o}>{o}</option>)}</select></div>
                           <div><label className={lbl}>堆积下界面形状{req}</label><select value={lp.lower_interface_shape} onChange={e => ul(pi, 'lower_interface_shape', e.target.value)} className={inp}>{ifShapeOpts.map(o => <option key={o}>{o}</option>)}</select></div>
-                          <div><label className={lbl}>地层性质判断</label><input value={lp.layer_nature} onChange={e => ul(pi, 'layer_nature', e.target.value)} className={inp} placeholder="现代耕土层、明清文化层" /></div>
+                          <div><label className={lbl}>地层性质判断{req}</label><input value={lp.layer_nature} onChange={e => ul(pi, 'layer_nature', e.target.value)} className={inp} placeholder="现代耕土层、明清文化层" /></div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Small finds for layer */}
+                    <div>
+                      <label className={lbl}>是否采集小件{req}</label>
+                      <select value={lp.has_small_find} onChange={e => ul(pi, 'has_small_find', e.target.value)} className={`${inp} w-24`}><option>否</option><option>是</option></select>
+                      {lp.has_small_find === '是' && (
+                        <div className="mt-2">
+                          <div className="flex items-center justify-between mb-1.5">
+                            <label className={lbl}>小件登记{req}</label>
+                            <button type="button" onClick={() => addLayerSF(pi)} className="text-xs text-amber-700 hover:text-amber-800">+ 添加小件</button>
+                          </div>
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 mb-1 text-xs text-stone-400 px-1">
+                            <span>小件编号</span><span>类别</span><span>出土坐标</span><span>入库位置</span>
+                          </div>
+                          {lp.small_finds.map((sf, ri) => renderSmallFindRow(sf, ri, (ri, k, v) => ulSF(pi, ri, k, v), (ri) => delLayerSF(pi, ri), lp.small_finds.length > 1))}
                         </div>
                       )}
                     </div>
@@ -621,7 +1034,9 @@ function DiaryContent() {
             <div className={secCls}>
               <div className="px-5 py-3 border-b border-stone-100 text-sm font-medium text-stone-700">🔲 刮面</div>
               <div className="px-5 py-4 space-y-3">
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div><label className={lbl}>开始时间{req}</label><input type="time" value={form.scrape_time_start} onChange={e => u('scrape_time_start', e.target.value)} className={inp} /></div>
+                  <div><label className={lbl}>结束时间{req}</label><input type="time" value={form.scrape_time_end} onChange={e => u('scrape_time_end', e.target.value)} className={inp} /></div>
                   <div><label className={lbl}>工作进度{req}</label><select value={form.scrape_progress} onChange={e => u('scrape_progress', e.target.value)} className={inp}><option>未完成</option><option>全方一次</option><option>全方两次</option><option>全方三次</option></select></div>
                   <div><label className={lbl}>方向{req}</label><input value={form.scrape_direction} onChange={e => u('scrape_direction', e.target.value)} className={inp} placeholder="从北向南" /></div>
                 </div>
@@ -652,33 +1067,68 @@ function DiaryContent() {
                       <div><label className={lbl}>完工状态{req}</label><select value={fp.complete_status} onChange={e => uf(fi, 'complete_status', e.target.value)} className={inp}><option>二分之一完成</option><option>二分之一未完成</option><option>全部清理完成</option></select></div>
                     </div>
 
-                    {/* Half-complete fields */}
+                    {/* Half-complete: deposit layers matching layer format */}
                     {fp.complete_status !== '全部清理完成' && (
                       <div className="space-y-3">
                         <div>
                           <div className="flex items-center justify-between mb-1.5">
-                            <label className={lbl}>当天清理堆积描述</label>
+                            <label className={lbl}>当天清理堆积描述{req}</label>
                             <button type="button" onClick={() => addHalfDep(fi)} className="text-xs text-amber-700 hover:text-amber-800">+ 添加层</button>
                           </div>
                           {fp.half_deposits.map((hd, di) => (
                             <div key={di} className="border border-stone-200 rounded-lg p-3 mb-2 space-y-2">
                               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                                <div><input value={hd.layer} onChange={e => uhd(fi, di, 'layer', e.target.value)} className={inp} placeholder="层位" /></div>
-                                <div><input value={hd.texture} onChange={e => uhd(fi, di, 'texture', e.target.value)} className={inp} placeholder="土质" /></div>
-                                <div><input value={hd.color} onChange={e => uhd(fi, di, 'color', e.target.value)} className={inp} placeholder="土色" /></div>
-                                <div><input value={hd.thickness} onChange={e => uhd(fi, di, 'thickness', e.target.value)} className={inp} placeholder="厚度cm" /></div>
-                                <div><input value={hd.inclusions} onChange={e => uhd(fi, di, 'inclusions', e.target.value)} className={inp} placeholder="包含物" /></div>
-                                <div><select value={hd.upper_interface} onChange={e => uhd(fi, di, 'upper_interface', e.target.value)} className={inp}>{ifShapeOpts.map(o => <option key={o}>{o}</option>)}</select></div>
-                                <div><select value={hd.lower_interface} onChange={e => uhd(fi, di, 'lower_interface', e.target.value)} className={inp}>{ifShapeOpts.map(o => <option key={o}>{o}</option>)}</select></div>
-                                <div><input value={hd.specimen} onChange={e => uhd(fi, di, 'specimen', e.target.value)} className={inp} placeholder="标本采集" /></div>
-                                <div><input value={hd.artifacts} onChange={e => uhd(fi, di, 'artifacts', e.target.value)} className={inp} placeholder="出土遗物" /></div>
-                                <div><input value={hd.soil_sample} onChange={e => uhd(fi, di, 'soil_sample', e.target.value)} className={inp} placeholder="土样采集" /></div>
+                                <div><label className={lbl}>层位{req}</label><input value={hd.layer} onChange={e => uhd(fi, di, 'layer', e.target.value)} className={inp} placeholder="层位" /></div>
+                                <div><label className={lbl}>土质{req}</label><input value={hd.soil_texture} onChange={e => uhd(fi, di, 'soil_texture', e.target.value)} className={inp} placeholder="土质" /></div>
+                                <div><label className={lbl}>土色{req}</label><input value={hd.soil_color} onChange={e => uhd(fi, di, 'soil_color', e.target.value)} className={inp} placeholder="土色" /></div>
+                                <div><label className={lbl}>致密度{req}</label><select value={hd.soil_density} onChange={e => uhd(fi, di, 'soil_density', e.target.value)} className={inp}>{densityOpts.map(o => <option key={o}>{o}</option>)}</select></div>
+                                <div><label className={lbl}>厚度(cm){req}</label><input value={hd.thickness} onChange={e => uhd(fi, di, 'thickness', e.target.value)} className={inp} placeholder="厚度cm" /></div>
+                                <div><label className={lbl}>上界面形状{req}</label><select value={hd.upper_interface} onChange={e => uhd(fi, di, 'upper_interface', e.target.value)} className={inp}>{ifShapeOpts.map(o => <option key={o}>{o}</option>)}</select></div>
+                                <div><label className={lbl}>下界面形状{req}</label><select value={hd.lower_interface} onChange={e => uhd(fi, di, 'lower_interface', e.target.value)} className={inp}>{ifShapeOpts.map(o => <option key={o}>{o}</option>)}</select></div>
+                                <div><label className={lbl}>土样采集</label><input value={hd.soil_sample} onChange={e => uhd(fi, di, 'soil_sample', e.target.value)} className={inp} placeholder="土样采集" /></div>
                               </div>
+
+                              {/* Half deposit inclusions */}
+                              <div>
+                                <div className="flex items-center justify-between mb-1">
+                                  <span className="text-xs font-medium text-stone-600">包含物{req}</span>
+                                  <button type="button" onClick={() => addHdInc(fi, di)} className="text-xs text-amber-700">+ 添加</button>
+                                </div>
+                                <div className="grid grid-cols-5 gap-1.5 mb-1 text-xs text-stone-400 px-1">
+                                  <span>种类</span><span>比例</span><span>粒径</span><span>分选度</span><span>圆整度</span>
+                                </div>
+                                {hd.inclusions.map((inc, ri) => renderInclusionRow(inc, ri, (ri, k, v) => uhdInc(fi, di, ri, k, v), (ri) => delHdInc(fi, di, ri), hd.inclusions.length > 1))}
+                              </div>
+
+                              {/* Half deposit artifacts */}
+                              <div>
+                                <div className="flex items-center justify-between mb-1">
+                                  <span className="text-xs font-medium text-stone-600">出土物{req}</span>
+                                  <button type="button" onClick={() => addHdArt(fi, di)} className="text-xs text-amber-700">+ 添加</button>
+                                </div>
+                                <div className="grid grid-cols-3 gap-1.5 mb-1 text-xs text-stone-400 px-1">
+                                  <span>种类</span><span>数量</span><span>编号</span>
+                                </div>
+                                {hd.artifacts_found.map((art, ri) => renderArtifactRow(art, ri, (ri, k, v) => uhdArt(fi, di, ri, k, v), (ri) => delHdArt(fi, di, ri), hd.artifacts_found.length > 1))}
+                              </div>
+
+                              {/* Half deposit specimens */}
+                              <div>
+                                <div className="flex items-center justify-between mb-1">
+                                  <span className="text-xs font-medium text-stone-600">采集标本{req}</span>
+                                  <button type="button" onClick={() => addHdSpec(fi, di)} className="text-xs text-amber-700">+ 添加</button>
+                                </div>
+                                <div className="grid grid-cols-3 gap-1.5 mb-1 text-xs text-stone-400 px-1">
+                                  <span>标本编号</span><span>类别</span><span>数量</span>
+                                </div>
+                                {hd.specimens.map((sp, ri) => renderSpecimenRow(sp, ri, (ri, k, v) => uhdSpec(fi, di, ri, k, v), (ri) => delHdSpec(fi, di, ri), hd.specimens.length > 1))}
+                              </div>
+
                               {fp.half_deposits.length > 1 && <button type="button" onClick={() => delHalfDep(fi, di)} className="text-xs text-red-500">删除此层</button>}
                             </div>
                           ))}
                         </div>
-                        <div><label className={lbl}>清理过程中特殊现象观察记录</label><textarea value={fp.special_observation} onChange={e => uf(fi, 'special_observation', e.target.value)} className={inp} rows={2} placeholder="特殊现象观察记录…" /></div>
+                        <div><label className={lbl}>清理过程中特殊现象观察记录{req}</label><textarea value={fp.special_observation} onChange={e => uf(fi, 'special_observation', e.target.value)} className={inp} rows={2} placeholder="特殊现象观察记录…" /></div>
                       </div>
                     )}
 
@@ -691,63 +1141,113 @@ function DiaryContent() {
                           <div><label className={lbl}>剖面底部{req}</label><select value={fp.profile_bottom} onChange={e => uf(fi, 'profile_bottom', e.target.value)} className={inp}><option>尖底</option><option>圜底</option><option>平底</option></select></div>
                           <div><label className={lbl}>底部{req}</label><select value={fp.bottom_clarity} onChange={e => uf(fi, 'bottom_clarity', e.target.value)} className={inp}><option>明显</option><option>较明显</option><option>不明显</option></select></div>
                         </div>
-                        <div><label className={lbl}>壁面（加工痕迹、倾斜度、粗糙或光滑）</label><textarea value={fp.wall_desc} onChange={e => uf(fi, 'wall_desc', e.target.value)} className={inp} rows={1} /></div>
-                        <div><label className={lbl}>底面（加工痕迹、粗糙或光滑）</label><textarea value={fp.bottom_desc} onChange={e => uf(fi, 'bottom_desc', e.target.value)} className={inp} rows={1} /></div>
+                        <div><label className={lbl}>壁面（加工痕迹、倾斜度、粗糙或光滑）{req}</label><textarea value={fp.wall_desc} onChange={e => uf(fi, 'wall_desc', e.target.value)} className={inp} rows={1} /></div>
+                        <div><label className={lbl}>底面（加工痕迹、粗糙或光滑）{req}</label><textarea value={fp.bottom_desc} onChange={e => uf(fi, 'bottom_desc', e.target.value)} className={inp} rows={1} /></div>
                         <div className="grid grid-cols-2 gap-3">
-                          <div><label className={lbl}>柱洞倾斜角（如适用）</label><input value={fp.posthole_angle} onChange={e => uf(fi, 'posthole_angle', e.target.value)} className={inp} placeholder="°" /></div>
-                          <div><label className={lbl}>柱洞方向（如适用）</label><input value={fp.posthole_direction} onChange={e => uf(fi, 'posthole_direction', e.target.value)} className={inp} placeholder="正北等" /></div>
+                          <div><label className={lbl}>柱洞倾斜角（如适用）{req}</label><input value={fp.posthole_angle} onChange={e => uf(fi, 'posthole_angle', e.target.value)} className={inp} placeholder="°" /></div>
+                          <div><label className={lbl}>柱洞方向（如适用）{req}</label><input value={fp.posthole_direction} onChange={e => uf(fi, 'posthole_direction', e.target.value)} className={inp} placeholder="正北等" /></div>
                         </div>
 
                         {/* Complete deposit layers */}
                         <div>
                           <div className="flex items-center justify-between mb-1.5">
-                            <label className={lbl}>堆积描述</label>
+                            <label className={lbl}>堆积描述{req}</label>
                             <button type="button" onClick={() => addCompDep(fi)} className="text-xs text-amber-700 hover:text-amber-800">+ 添加层</button>
                           </div>
                           {fp.complete_deposits.map((cd, di) => (
                             <div key={di} className="border border-stone-200 rounded-lg p-3 mb-2 space-y-2">
                               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                                <div><input value={cd.layer} onChange={e => ucd(fi, di, 'layer', e.target.value)} className={inp} placeholder="层位" /></div>
-                                <div><input value={cd.texture} onChange={e => ucd(fi, di, 'texture', e.target.value)} className={inp} placeholder="土质" /></div>
-                                <div><input value={cd.color} onChange={e => ucd(fi, di, 'color', e.target.value)} className={inp} placeholder="土色" /></div>
-                                <div><select value={cd.density} onChange={e => ucd(fi, di, 'density', e.target.value)} className={inp}>{densityOpts.map(o => <option key={o}>{o}</option>)}</select></div>
-                                <div><input value={cd.thickness} onChange={e => ucd(fi, di, 'thickness', e.target.value)} className={inp} placeholder="厚度cm" /></div>
-                                <div><select value={cd.upper_interface} onChange={e => ucd(fi, di, 'upper_interface', e.target.value)} className={inp}>{ifShapeOpts.map(o => <option key={o}>{o}</option>)}</select></div>
-                                <div><select value={cd.lower_interface} onChange={e => ucd(fi, di, 'lower_interface', e.target.value)} className={inp}>{ifShapeOpts.map(o => <option key={o}>{o}</option>)}</select></div>
-                                <div><input value={cd.specimen} onChange={e => ucd(fi, di, 'specimen', e.target.value)} className={inp} placeholder="标本采集" /></div>
-                                <div><input value={cd.artifacts} onChange={e => ucd(fi, di, 'artifacts', e.target.value)} className={inp} placeholder="出土遗物" /></div>
-                                <div><input value={cd.soil_sample} onChange={e => ucd(fi, di, 'soil_sample', e.target.value)} className={inp} placeholder="土样采集" /></div>
+                                <div><label className={lbl}>层位{req}</label><input value={cd.layer} onChange={e => ucd(fi, di, 'layer', e.target.value)} className={inp} placeholder="层位" /></div>
+                                <div><label className={lbl}>土质{req}</label><input value={cd.texture} onChange={e => ucd(fi, di, 'texture', e.target.value)} className={inp} placeholder="土质" /></div>
+                                <div><label className={lbl}>土色{req}</label><input value={cd.color} onChange={e => ucd(fi, di, 'color', e.target.value)} className={inp} placeholder="土色" /></div>
+                                <div><label className={lbl}>致密度{req}</label><select value={cd.density} onChange={e => ucd(fi, di, 'density', e.target.value)} className={inp}>{densityOpts.map(o => <option key={o}>{o}</option>)}</select></div>
+                                <div><label className={lbl}>厚度(cm){req}</label><input value={cd.thickness} onChange={e => ucd(fi, di, 'thickness', e.target.value)} className={inp} placeholder="厚度cm" /></div>
+                                <div><label className={lbl}>上界面形状{req}</label><select value={cd.upper_interface} onChange={e => ucd(fi, di, 'upper_interface', e.target.value)} className={inp}>{ifShapeOpts.map(o => <option key={o}>{o}</option>)}</select></div>
+                                <div><label className={lbl}>下界面形状{req}</label><select value={cd.lower_interface} onChange={e => ucd(fi, di, 'lower_interface', e.target.value)} className={inp}>{ifShapeOpts.map(o => <option key={o}>{o}</option>)}</select></div>
+                                <div><label className={lbl}>土样采集</label><input value={cd.soil_sample} onChange={e => ucd(fi, di, 'soil_sample', e.target.value)} className={inp} placeholder="土样采集" /></div>
                               </div>
 
-                              {/* Inclusion rows for complete deposit */}
+                              {/* Inclusions */}
                               <div>
                                 <div className="flex items-center justify-between mb-1">
-                                  <span className="text-xs text-stone-500">包含物</span>
+                                  <span className="text-xs font-medium text-stone-600">包含物{req}</span>
                                   <button type="button" onClick={() => addCompInc(fi, di)} className="text-xs text-amber-700">+ 添加</button>
                                 </div>
-                                {cd.inclusions.map((inc, ri) => (
-                                  <div key={ri} className="grid grid-cols-5 gap-1.5 mb-1">
-                                    <input value={inc.type} onChange={e => ucdInc(fi, di, ri, 'type', e.target.value)} className={inp} placeholder="种类" />
-                                    <input value={inc.proportion} onChange={e => ucdInc(fi, di, ri, 'proportion', e.target.value)} className={inp} placeholder="比例" />
-                                    <input value={inc.particleSize} onChange={e => ucdInc(fi, di, ri, 'particleSize', e.target.value)} className={inp} placeholder="粒径cm" />
-                                    <select value={inc.sorting} onChange={e => ucdInc(fi, di, ri, 'sorting', e.target.value)} className={inp}>{sortOpts.map(o => <option key={o}>{o}</option>)}</select>
-                                    <div className="flex gap-1">
-                                      <select value={inc.roundness} onChange={e => ucdInc(fi, di, ri, 'roundness', e.target.value)} className={inp}>{roundOpts.map(o => <option key={o}>{o}</option>)}</select>
-                                      {cd.inclusions.length > 1 && <button type="button" onClick={() => delCompInc(fi, di, ri)} className="text-red-500 text-xs">✕</button>}
-                                    </div>
-                                  </div>
-                                ))}
+                                <div className="grid grid-cols-5 gap-1.5 mb-1 text-xs text-stone-400 px-1">
+                                  <span>种类</span><span>比例</span><span>粒径</span><span>分选度</span><span>圆整度</span>
+                                </div>
+                                {cd.inclusions.map((inc, ri) => renderInclusionRow(inc, ri, (ri, k, v) => ucdInc(fi, di, ri, k, v), (ri) => delCompInc(fi, di, ri), cd.inclusions.length > 1))}
                               </div>
 
-                              <div><input value={cd.observation} onChange={e => ucd(fi, di, 'observation', e.target.value)} className={inp} placeholder="观察记录" /></div>
+                              {/* Artifacts */}
+                              <div>
+                                <div className="flex items-center justify-between mb-1">
+                                  <span className="text-xs font-medium text-stone-600">出土物{req}</span>
+                                  <button type="button" onClick={() => addCdArt(fi, di)} className="text-xs text-amber-700">+ 添加</button>
+                                </div>
+                                <div className="grid grid-cols-3 gap-1.5 mb-1 text-xs text-stone-400 px-1">
+                                  <span>种类</span><span>数量</span><span>编号</span>
+                                </div>
+                                {cd.artifacts_found.map((art, ri) => renderArtifactRow(art, ri, (ri, k, v) => ucdArt(fi, di, ri, k, v), (ri) => delCdArt(fi, di, ri), cd.artifacts_found.length > 1))}
+                              </div>
+
+                              {/* Specimens */}
+                              <div>
+                                <div className="flex items-center justify-between mb-1">
+                                  <span className="text-xs font-medium text-stone-600">采集标本{req}</span>
+                                  <button type="button" onClick={() => addCdSpec(fi, di)} className="text-xs text-amber-700">+ 添加</button>
+                                </div>
+                                <div className="grid grid-cols-3 gap-1.5 mb-1 text-xs text-stone-400 px-1">
+                                  <span>标本编号</span><span>类别</span><span>数量</span>
+                                </div>
+                                {cd.specimens.map((sp, ri) => renderSpecimenRow(sp, ri, (ri, k, v) => ucdSpec(fi, di, ri, k, v), (ri) => delCdSpec(fi, di, ri), cd.specimens.length > 1))}
+                              </div>
+
+                              <div><label className={lbl}>观察记录{req}</label><input value={cd.observation} onChange={e => ucd(fi, di, 'observation', e.target.value)} className={inp} placeholder="观察记录" /></div>
                               {fp.complete_deposits.length > 1 && <button type="button" onClick={() => delCompDep(fi, di)} className="text-xs text-red-500">删除此层</button>}
                             </div>
                           ))}
                         </div>
 
-                        <div><label className={lbl}>层位关系系络图（填写文件路径或URL）</label><input value={fp.stratigraphy_diagram} onChange={e => uf(fi, 'stratigraphy_diagram', e.target.value)} className={inp} placeholder="路径或URL" /></div>
+                        <div>
+                          <label className={lbl}>层位关系系络图{req}</label>
+                          {fp.stratigraphy_diagram ? (
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-sm text-green-700 truncate flex-1">已上传: {fp.stratigraphy_diagram}</span>
+                              <button type="button" onClick={() => uf(fi, 'stratigraphy_diagram', '')} className="text-xs text-red-500">清除</button>
+                            </div>
+                          ) : (
+                            <div className="mt-1">
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={e => { const file = e.target.files?.[0]; if (file) handleDiagramUpload(fi, file); }}
+                                className="text-sm text-stone-600 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:bg-amber-100 file:text-amber-800 hover:file:bg-amber-200"
+                              />
+                              {uploading[`diagram-${fi}`] && <span className="text-xs text-amber-600 ml-2">上传中…</span>}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )}
+
+                    {/* Small finds for feature */}
+                    <div>
+                      <label className={lbl}>是否采集小件{req}</label>
+                      <select value={fp.has_small_find} onChange={e => uf(fi, 'has_small_find', e.target.value)} className={`${inp} w-24`}><option>否</option><option>是</option></select>
+                      {fp.has_small_find === '是' && (
+                        <div className="mt-2">
+                          <div className="flex items-center justify-between mb-1.5">
+                            <label className={lbl}>小件登记{req}</label>
+                            <button type="button" onClick={() => addFeatSF(fi)} className="text-xs text-amber-700 hover:text-amber-800">+ 添加小件</button>
+                          </div>
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 mb-1 text-xs text-stone-400 px-1">
+                            <span>小件编号</span><span>类别</span><span>出土坐标</span><span>入库位置</span>
+                          </div>
+                          {fp.small_finds.map((sf, ri) => renderSmallFindRow(sf, ri, (ri, k, v) => ufSF(fi, ri, k, v), (ri) => delFeatSF(fi, ri), fp.small_finds.length > 1))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -761,10 +1261,9 @@ function DiaryContent() {
       <div className={secCls}>
         <div className="px-5 py-3 border-b border-stone-100 text-sm font-medium text-stone-700">📝 总结、计划与采集登记</div>
         <div className="px-5 py-4 space-y-3">
-          <div><label className={lbl}>工作总结与反思</label><textarea value={form.work_summary} onChange={e => u('work_summary', e.target.value)} className={inp} rows={3} placeholder="本日工作内容总结与反思…" /></div>
-          <div><label className={lbl}>明日计划</label><textarea value={form.tomorrow_plan} onChange={e => u('tomorrow_plan', e.target.value)} className={inp} rows={2} placeholder="明日工作计划…" /></div>
-          <div><label className={lbl}>当天采集标本登记（土样、陶片、骨骼、炭样等）</label><textarea value={form.specimen_register} onChange={e => u('specimen_register', e.target.value)} className={inp} rows={2} placeholder="①层浮选土样1份、陶片1袋…" /></div>
-          <div><label className={lbl}>当天出土小件登记</label><textarea value={form.small_finds_register} onChange={e => u('small_finds_register', e.target.value)} className={inp} rows={2} placeholder="描述出土小件编号、形制、坐标等…" /></div>
+          <div><label className={lbl}>工作总结与反思{req}</label><textarea value={form.work_summary} onChange={e => u('work_summary', e.target.value)} className={inp} rows={3} placeholder="本日工作内容总结与反思…" /></div>
+          <div><label className={lbl}>明日计划{req}</label><textarea value={form.tomorrow_plan} onChange={e => u('tomorrow_plan', e.target.value)} className={inp} rows={2} placeholder="明日工作计划…" /></div>
+          <div className="text-xs text-stone-400">标本与小件登记将在生成日记时自动从前面的表格中汇总。</div>
         </div>
       </div>
 
