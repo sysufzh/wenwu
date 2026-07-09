@@ -61,7 +61,7 @@ interface CompleteDepositLayer {
 }
 
 interface FeaturePanel {
-  feature_number: string; feature_type: string; feature_opening: string;
+  feature_number: string; feature_position: string; feature_type: string; feature_opening: string;
   break_relation: string; shape: string; dimensions: string;
   excavate_method: string; section_dir: string; complete_status: string;
   half_deposits: HalfDeposit[];
@@ -109,7 +109,7 @@ const emptyCompleteDeposit = (): CompleteDepositLayer => ({
 });
 
 const emptyFeature = (): FeaturePanel => ({
-  feature_number: '', feature_type: '灰坑', feature_opening: '',
+  feature_number: '', feature_position: '', feature_type: '灰坑', feature_opening: '',
   break_relation: '', shape: '圆形', dimensions: '',
   excavate_method: '1/2发掘法', section_dir: '', complete_status: '二分之一完成',
   half_deposits: [emptyHalfDeposit()], special_observation: '',
@@ -457,6 +457,7 @@ function DiaryContent() {
       for (let i = 0; i < form.feature_panels.length; i++) {
         const fp = form.feature_panels[i]; const n = form.feature_panels.length > 1 ? `遗迹${i + 1}：` : '';
         if (!fp.feature_number) return `${n}请填写遗迹编号`;
+        if (!fp.feature_position) return `${n}请填写遗迹在探方中的位置`;
         if (!fp.feature_type) return `${n}请选择遗迹类型`;
         if (!fp.feature_opening) return `${n}请填写开口层位`;
         if (!fp.break_relation) return `${n}请填写打破关系`;
@@ -648,6 +649,23 @@ function DiaryContent() {
           if (lp.layer_thickness) sumParts.push(`厚${lp.layer_thickness}cm`);
           if (soilDesc) sumParts.push(`为${soilDesc}`);
           sumParts.push(`${lp.soil_density}`);
+          // Inclusions summary
+          if (lp.inclusions.some(inc => inc.type)) {
+            const incStrs = lp.inclusions.filter(inc => inc.type).map(inc =>
+              `${inc.type}（${inc.proportion}，粒径${inc.particleSize}cm）`
+            );
+            sumParts.push(`包含${incStrs.join('、')}`);
+          }
+          // Artifacts summary
+          if (lp.artifacts_found.some(a => a.type)) {
+            const artStrs = lp.artifacts_found.filter(a => a.type).map(a => `${a.type}${a.quantity}（编号${a.number}）`);
+            sumParts.push(`出土${artStrs.join('、')}`);
+          }
+          // Specimens summary
+          if (lp.specimens.some(s => s.number)) {
+            const spStrs = lp.specimens.filter(s => s.number).map(s => `标本${s.number}（${s.category}，${s.quantity}）`);
+            sumParts.push(`采集${spStrs.join('、')}`);
+          }
           if (lp.upper_interface_shape) sumParts.push(`上界面呈${lp.upper_interface_shape}`);
           if (lp.lower_interface_shape) sumParts.push(`下界面呈${lp.lower_interface_shape}`);
           if (lp.layer_nature) sumParts.push(`应为${lp.layer_nature}`);
@@ -685,7 +703,7 @@ function DiaryContent() {
       for (let fi = 0; fi < form.feature_panels.length; fi++) {
         const fp = form.feature_panels[fi];
         if (form.feature_panels.length > 1) lines.push(`【遗迹${fi + 1}】${fp.feature_number}`);
-        lines.push(`今日开始对${fp.feature_number}进行发掘。${fp.feature_number}为${fp.feature_type}，开口于${fp.feature_opening}层下${fp.break_relation !== '无' ? `，${fp.break_relation}` : ''}。平面呈${fp.shape}，${fp.dimensions}。`);
+        lines.push(`今日开始对${fp.feature_number}进行发掘。${fp.feature_number}位于探方${fp.feature_position}，为${fp.feature_type}，开口于${fp.feature_opening}层下${fp.break_relation !== '无' ? `，${fp.break_relation}` : ''}。平面呈${fp.shape}，${fp.dimensions}。`);
         lines.push(`采用${fp.excavate_method}进行发掘，解剖方向${fp.section_dir}。`);
 
         if (fp.complete_status === '全部清理完成') {
@@ -723,8 +741,34 @@ function DiaryContent() {
 
           lines.push('');
           lines.push(`${fp.feature_number}小结：`);
-          lines.push(`位置与层位：${fp.feature_number}位于探方内，开口于${fp.feature_opening}层下${fp.break_relation !== '无' ? `，${fp.break_relation}` : ''}。`);
-          lines.push(`形状与尺寸：平面呈${fp.shape}，${fp.dimensions}。剖面壁部${fp.profile_wall}，底部${fp.profile_bottom}。口部${fp.mouth_clarity}，底部${fp.bottom_clarity}。`);
+          lines.push(`位置与层位：${fp.feature_number}位于探方${fp.feature_position}，开口于${fp.feature_opening}层下${fp.break_relation !== '无' ? `，${fp.break_relation}` : ''}。`);
+          lines.push(`形状与尺寸：平面呈${fp.shape}，${fp.dimensions}。剖面壁部呈${fp.profile_wall}，底部呈${fp.profile_bottom}。口部${fp.mouth_clarity}，底部${fp.bottom_clarity}。${fp.wall_desc ? `壁面${fp.wall_desc}。` : ''}${fp.bottom_desc ? `底面${fp.bottom_desc}。` : ''}`);
+          lines.push('堆积情况：');
+          for (const cd of fp.complete_deposits) {
+            if (!cd.layer && !cd.texture) continue;
+            const cdSoil = [cd.color, cd.texture].filter(Boolean).join('');
+            const cdParts = [`${cd.layer}层为${cdSoil}，${cd.density || '较疏松'}`];
+            if (cd.thickness) cdParts.push(`厚${cd.thickness}cm`);
+            if (cd.upper_interface) cdParts.push(`上界面呈${cd.upper_interface}`);
+            if (cd.lower_interface) cdParts.push(`下界面呈${cd.lower_interface}`);
+            if (cd.inclusions.some(inc => inc.type)) {
+              const incStrs = cd.inclusions.filter(inc => inc.type).map(inc =>
+                `${inc.type}（${inc.proportion}，粒径${inc.particleSize}cm）`
+              );
+              cdParts.push(`包含${incStrs.join('、')}`);
+            }
+            if (cd.artifacts_found.some(a => a.type)) {
+              const artStrs = cd.artifacts_found.filter(a => a.type).map(a => `${a.type}${a.quantity}（编号${a.number}）`);
+              cdParts.push(`出土${artStrs.join('、')}`);
+            }
+            if (cd.specimens.some(s => s.number)) {
+              const spStrs = cd.specimens.filter(s => s.number).map(s => `标本${s.number}（${s.category}，${s.quantity}）`);
+              cdParts.push(`采集${spStrs.join('、')}`);
+            }
+            if (cd.soil_sample) cdParts.push(`土样：${cd.soil_sample}`);
+            if (cd.observation) cdParts.push(cd.observation);
+            lines.push(`  ${cdParts.join('，')}。`);
+          }
         } else {
           for (const hd of fp.half_deposits) {
             if (!hd.layer && !hd.soil_texture) continue;
@@ -1057,6 +1101,7 @@ function DiaryContent() {
                   <div className="px-5 py-4 space-y-3">
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                       <div><label className={lbl}>遗迹编号{req}</label><input value={fp.feature_number} onChange={e => uf(fi, 'feature_number', e.target.value)} className={inp} placeholder="2024HSCH100" /></div>
+                      <div><label className={lbl}>探方中位置{req}</label><input value={fp.feature_position} onChange={e => uf(fi, 'feature_position', e.target.value)} className={inp} placeholder="探方西南部" /></div>
                       <div><label className={lbl}>遗迹类型{req}</label><select value={fp.feature_type} onChange={e => uf(fi, 'feature_type', e.target.value)} className={inp}><option>灰坑</option><option>灰沟</option><option>房址</option><option>墓葬</option><option>其他</option></select></div>
                       <div><label className={lbl}>开口层位{req}</label><input value={fp.feature_opening} onChange={e => uf(fi, 'feature_opening', e.target.value)} className={inp} placeholder="②层下" /></div>
                       <div><label className={lbl}>打破关系{req}</label><input value={fp.break_relation} onChange={e => uf(fi, 'break_relation', e.target.value)} className={inp} placeholder="打破沟状遗迹（如无可填无）" /></div>
