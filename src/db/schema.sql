@@ -181,3 +181,67 @@ CREATE TABLE IF NOT EXISTS seal_usage (
   created_at DATETIME DEFAULT (datetime('now','localtime')),
   updated_at DATETIME DEFAULT (datetime('now','localtime'))
 );
+
+-- 田野考古发掘：遗迹（灰坑/房址等）主记录
+CREATE TABLE IF NOT EXISTS excavation_features (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  feature_number TEXT NOT NULL DEFAULT '',
+  trench_number TEXT DEFAULT '',
+  position TEXT DEFAULT '',
+  shape TEXT DEFAULT '',
+  opening_size TEXT DEFAULT '',
+  depth TEXT DEFAULT '',
+  bottom_size TEXT DEFAULT '',
+  drawing_info TEXT DEFAULT '',
+  photo_info TEXT DEFAULT '',
+  excavation_process TEXT DEFAULT '',
+  wall_bottom_detail TEXT DEFAULT '',
+  stratigraphy TEXT DEFAULT '',
+  dating TEXT DEFAULT '',
+  function_nature TEXT DEFAULT '',
+  sampling TEXT DEFAULT '',
+  remarks TEXT DEFAULT '',
+  recorder TEXT DEFAULT '',
+  record_date TEXT DEFAULT '',
+  site_name TEXT DEFAULT '牛头山遗址',
+  district TEXT DEFAULT '',
+  year TEXT DEFAULT '',
+  created_at DATETIME DEFAULT (datetime('now','localtime')),
+  updated_at DATETIME DEFAULT (datetime('now','localtime'))
+);
+
+-- 田野考古发掘：堆积层
+CREATE TABLE IF NOT EXISTS feature_layers (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  feature_id INTEGER NOT NULL,
+  layer_number TEXT DEFAULT '',
+  soil_color TEXT DEFAULT '',
+  soil_texture TEXT DEFAULT '',
+  density TEXT DEFAULT '',
+  thickness TEXT DEFAULT '',
+  deposit_shape TEXT DEFAULT '',
+  inclusions TEXT DEFAULT '',
+  preservation TEXT DEFAULT '',
+  cleaning_method TEXT DEFAULT '',
+  deposit_nature TEXT DEFAULT '',
+  depth_text TEXT DEFAULT '',
+  remarks TEXT DEFAULT '',
+  sort_order INTEGER DEFAULT 0,
+  FOREIGN KEY (feature_id) REFERENCES excavation_features(id) ON DELETE CASCADE
+);
+
+-- 田野考古发掘：遗物
+CREATE TABLE IF NOT EXISTS feature_artifacts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  feature_id INTEGER NOT NULL,
+  layer_number TEXT DEFAULT '',
+  type TEXT DEFAULT '',
+  quantity TEXT DEFAULT '',
+  number TEXT DEFAULT '',
+  remarks TEXT DEFAULT '',
+  sort_order INTEGER DEFAULT 0,
+  FOREIGN KEY (feature_id) REFERENCES excavation_features(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_feature_layers_feature_id ON feature_layers(feature_id);
+CREATE INDEX IF NOT EXISTS idx_feature_artifacts_feature_id ON feature_artifacts(feature_id);

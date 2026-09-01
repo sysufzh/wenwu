@@ -3,6 +3,7 @@ import path from 'path';
 import fs from 'fs';
 import bcrypt from 'bcryptjs';
 import { seedTransactionCategories } from './transactions';
+import { seedExcavation } from './seedExcavation';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 const DB_PATH = path.join(DATA_DIR, 'wenwu.db');
@@ -21,6 +22,7 @@ function getDb(): Database.Database {
     migrateSchema();
     seedUsers();
     seedTransactionCategories();
+    seedExcavation();
   }
   return db;
 }

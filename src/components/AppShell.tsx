@@ -82,6 +82,17 @@ const diaryConfig: SubSystemConfig = {
   backLabel: '返回主页',
 };
 
+const excavationConfig: SubSystemConfig = {
+  title: '田野考古发掘系统',
+  subtitle: '牛头山遗址',
+  navItems: [
+    { href: '/excavation', label: '遗迹列表', icon: '🏺' },
+    { href: '/excavation/new', label: '新建遗迹', icon: '➕' },
+  ],
+  backHref: '/',
+  backLabel: '返回主页',
+};
+
 function getConfig(pathname: string): SubSystemConfig | undefined {
   if (pathname === '/login' || pathname === '/') return undefined;
 
@@ -116,6 +127,10 @@ function getConfig(pathname: string): SubSystemConfig | undefined {
 
   if (pathname.startsWith('/diary')) {
     return diaryConfig;
+  }
+
+  if (pathname.startsWith('/excavation')) {
+    return excavationConfig;
   }
 
   return undefined;
