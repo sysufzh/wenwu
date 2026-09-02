@@ -55,21 +55,27 @@ function migrateSchema() {
 }
 
 function seedUsers() {
-  const count = db.prepare('SELECT COUNT(*) as c FROM users').get() as { c: number };
-  if (count.c > 0) return;
-
   const defaultUsers = [
     { username: 'admin', password: 'admin123', role: 'admin', display_name: '管理员' },
     { username: 'user1', password: 'user123', role: 'user', display_name: '库管员1' },
     { username: 'user2', password: 'user123', role: 'user', display_name: '库管员2' },
     { username: 'user3', password: 'user123', role: 'user', display_name: '库管员3' },
+    { username: 'user4', password: 'user123', role: 'user', display_name: '库管员4' },
+    { username: 'user5', password: 'user123', role: 'user', display_name: '库管员5' },
+    { username: 'user6', password: 'user123', role: 'user', display_name: '库管员6' },
+    { username: 'user7', password: 'user123', role: 'user', display_name: '库管员7' },
+    { username: 'user8', password: 'user123', role: 'user', display_name: '库管员8' },
+    { username: 'user9', password: 'user123', role: 'user', display_name: '库管员9' },
+    { username: 'user10', password: 'user123', role: 'user', display_name: '库管员10' },
   ];
 
   const stmt = db.prepare(
     'INSERT INTO users (username, password_hash, role, display_name) VALUES (@username, @password_hash, @role, @display_name)'
   );
+  const exists = db.prepare('SELECT 1 FROM users WHERE username = ?');
 
   for (const u of defaultUsers) {
+    if (exists.get(u.username)) continue;
     const passwordHash = bcrypt.hashSync(u.password, 10);
     stmt.run({ username: u.username, password_hash: passwordHash, role: u.role, display_name: u.display_name });
   }
