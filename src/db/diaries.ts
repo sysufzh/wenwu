@@ -25,9 +25,9 @@ export interface DiaryCreateInput {
   feature_data?: string;
 }
 
-export function getDiaries(params: { page?: number; limit?: number; dateFrom?: string; dateTo?: string } = {}) {
+export function getDiaries(params: { page?: number; limit?: number; dateFrom?: string; dateTo?: string; trench_number?: string } = {}) {
   const db = getDb();
-  const { page = 1, limit = 20, dateFrom, dateTo } = params;
+  const { page = 1, limit = 20, dateFrom, dateTo, trench_number } = params;
 
   let where = 'WHERE 1=1';
   const conditions: Record<string, string | number> = {};
@@ -39,6 +39,10 @@ export function getDiaries(params: { page?: number; limit?: number; dateFrom?: s
   if (dateTo) {
     where += ' AND diary_date <= @dateTo';
     conditions['dateTo'] = dateTo;
+  }
+  if (trench_number) {
+    where += ' AND trench_number = @trench_number';
+    conditions['trench_number'] = trench_number;
   }
 
   const countRow = db.prepare(`SELECT COUNT(*) as total FROM excavation_diaries ${where}`).get(conditions) as { total: number };
@@ -86,10 +90,45 @@ export function createDiary(input: DiaryCreateInput): ExcavationDiary {
   return getDiaryById(result.lastInsertRowid as number)!;
 }
 
+export function updateDiary(id: number, input: DiaryCreateInput): ExcavationDiary | undefined {
+  const db = getDb();
+  const existing = getDiaryById(id);
+  if (!existing) return undefined;
+
+  const now = new Date().toISOString();
+  db.prepare(
+    `UPDATE excavation_diaries SET
+      diary_date = @diary_date, weather = @weather, wind_direction = @wind_direction,
+      humidity = @humidity, trench_number = @trench_number, recorder = @recorder,
+      content = @content, updated_at = @updated_at
+     WHERE id = @id`
+  ).run({
+    id,
+    diary_date: input.diary_date ?? existing.diary_date,
+    weather: input.weather ?? existing.weather,
+    wind_direction: input.wind_direction ?? existing.wind_direction,
+    humidity: input.humidity ?? existing.humidity,
+    trench_number: input.trench_number ?? existing.trench_number,
+    recorder: input.recorder ?? existing.recorder,
+    content: input.content ?? existing.content,
+    updated_at: now,
+  });
+  return getDiaryById(id);
+}
+
 export function deleteDiary(id: number): boolean {
   const db = getDb();
   const result = db.prepare('DELETE FROM excavation_diaries WHERE id = ?').run(id);
   return result.changes > 0;
+}
+
+// 去重探方号列表（用于日记页左侧筛选栏）
+export function getTrenchNumbers(): string[] {
+  const db = getDb();
+  const rows = db.prepare(
+    `SELECT DISTINCT trench_number FROM excavation_diaries WHERE trench_number != '' ORDER BY trench_number`
+  ).all() as { trench_number: string }[];
+  return rows.map(r => r.trench_number);
 }
 
 // 按遗迹号取回相关日记（LIKE 粗筛 + JS 精筛 feature_data 里的 feature_number）

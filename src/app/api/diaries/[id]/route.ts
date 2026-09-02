@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDiaryById, deleteDiary } from '@/db/diaries';
+import { getDiaryById, deleteDiary, updateDiary, DiaryCreateInput } from '@/db/diaries';
 
 export async function GET(
   request: NextRequest,
@@ -12,6 +12,24 @@ export async function GET(
     return NextResponse.json(diary);
   } catch (error) {
     return NextResponse.json({ error: '获取日记失败' }, { status: 500 });
+  }
+}
+
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const body = (await request.json()) as DiaryCreateInput;
+    if (!body.content) {
+      return NextResponse.json({ error: '日记内容不能为空' }, { status: 400 });
+    }
+    const diary = updateDiary(parseInt(id), body);
+    if (!diary) return NextResponse.json({ error: '日记不存在' }, { status: 404 });
+    return NextResponse.json(diary);
+  } catch (error) {
+    return NextResponse.json({ error: '更新日记失败' }, { status: 500 });
   }
 }
 

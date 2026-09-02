@@ -6,7 +6,7 @@ import { useSearchParams } from 'next/navigation';
 // Types
 interface DiaryRecord {
   id: number; diary_date: string; weather: string; wind_direction: string;
-  humidity: string; trench_number: string; recorder: string; content: string; created_at: string;
+  humidity: string; trench_number: string; recorder: string; content: string; created_at: string; updated_at: string;
 }
 
 interface InclusionRow {
@@ -157,6 +157,9 @@ function DiaryContent() {
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState<Record<string, boolean>>({});
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [trenches, setTrenches] = useState<string[]>([]);
+  const [activeTrench, setActiveTrench] = useState('');
 
   const u = (key: string, value: unknown) => setForm(f => ({ ...f, [key]: value }));
 
@@ -595,6 +598,7 @@ function DiaryContent() {
   // Generate diary text
   const generateDiary = () => {
     const err = validate(); if (err) { alert(err); return; }
+    setEditingId(null);
 
     if (form.work_type === 'rest') {
       setGeneratedText(`${form.diary_date} ${form.weather} 风向${form.wind_direction} 湿度${form.humidity}\n探方：${form.trench_number}\n记录人：${form.recorder}\n\n本日未发掘。`);
@@ -828,19 +832,21 @@ function DiaryContent() {
   const handleSave = async () => {
     if (!generatedText) { alert('请先生成日记'); return; }
     setSaving(true);
-    const res = await fetch('/api/diaries', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        diary_date: form.diary_date, weather: form.weather, wind_direction: form.wind_direction,
-        humidity: form.humidity, trench_number: form.trench_number, recorder: form.recorder,
-        content: generatedText,
-        feature_data: JSON.stringify({
-          feature_panels: form.has_feature_excavation ? form.feature_panels.filter(fp => fp.feature_number) : [],
-        }),
-      }),
+    const isUpdate = editingId != null;
+    const base = {
+      diary_date: form.diary_date, weather: form.weather, wind_direction: form.wind_direction,
+      humidity: form.humidity, trench_number: form.trench_number, recorder: form.recorder,
+      content: generatedText,
+    };
+    const payload = isUpdate
+      ? base
+      : { ...base, feature_data: JSON.stringify({ feature_panels: form.has_feature_excavation ? form.feature_panels.filter(fp => fp.feature_number) : [] }) };
+    const res = await fetch(isUpdate ? `/api/diaries/${editingId}` : '/api/diaries', {
+      method: isUpdate ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
     });
     alert(res.ok ? '保存成功' : (await res.json()).error || '保存失败');
-    if (res.ok) fetchDiaries();
+    if (res.ok) { fetchDiaries(); fetchTrenches(); }
     setSaving(false);
   };
 
@@ -852,16 +858,44 @@ function DiaryContent() {
   const fetchDiaries = useCallback(async () => {
     setLoading(true);
     const params = new URLSearchParams(); params.set('page', String(p)); params.set('limit', '10');
+    if (activeTrench) params.set('trench_number', activeTrench);
     const res = await fetch(`/api/diaries?${params}`); const data = await res.json();
     setDiaries(data.data || []); setTotal(data.total); setTotalPages(data.totalPages); setLoading(false);
-  }, [p]);
+  }, [p, activeTrench]);
   useEffect(() => { fetchDiaries(); }, [fetchDiaries]);
+
+  const fetchTrenches = useCallback(async () => {
+    const res = await fetch('/api/diaries/trenches'); const data = await res.json();
+    setTrenches(data.data || []);
+  }, []);
+  useEffect(() => { fetchTrenches(); }, [fetchTrenches]);
 
   const handleDelete = async (id: number) => {
     if (!confirm('确定要删除此日记吗？')) return;
-    const res = await fetch(`/api/diaries/${id}`, { method: 'DELETE' }); if (res.ok) fetchDiaries();
+    const res = await fetch(`/api/diaries/${id}`, { method: 'DELETE' });
+    if (res.ok) {
+      if (editingId === id) { setEditingId(null); setGeneratedText(''); }
+      fetchDiaries(); fetchTrenches();
+    }
   };
-  const handleView = (d: DiaryRecord) => { setGeneratedText(d.content); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+  const handleView = (d: DiaryRecord) => {
+    setGeneratedText(d.content);
+    setEditingId(d.id);
+    setForm(f => ({
+      ...f,
+      diary_date: d.diary_date, weather: d.weather, wind_direction: d.wind_direction,
+      humidity: d.humidity, trench_number: d.trench_number, recorder: d.recorder,
+    }));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const fmtTime = (iso?: string) => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return iso;
+    const p = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+  };
 
   const inp = 'w-full px-2.5 py-1.5 border border-stone-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white';
   const lbl = 'block text-xs font-medium text-stone-600 mb-1';
@@ -1345,22 +1379,38 @@ function DiaryContent() {
       {/* History */}
       <div className="bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden">
         <div className="px-5 py-3 border-b border-stone-100"><span className="text-sm font-medium text-stone-700">已保存日记</span></div>
-        {loading ? <div className="px-5 py-8 text-center text-stone-400 text-sm">加载中…</div> : diaries.length === 0 ? <div className="px-5 py-8 text-center text-stone-400 text-sm">暂无日记</div> : (
-          <div className="divide-y divide-stone-100">
-            {diaries.map(d => (
-              <div key={d.id} className="px-5 py-3 hover:bg-stone-50 flex items-center justify-between">
-                <div className="min-w-0 flex-1"><div className="text-sm font-medium text-stone-800 truncate">{d.diary_date} {d.weather} {d.trench_number && `· ${d.trench_number}`}</div><div className="text-xs text-stone-500 mt-0.5 truncate">{d.content.slice(0, 100)}…</div></div>
-                <div className="flex gap-1 ml-3 shrink-0"><button onClick={() => handleView(d)} className="text-xs px-2 py-1 rounded bg-stone-100 text-stone-600 hover:bg-stone-200">查看</button><button onClick={() => handleDelete(d.id)} className="text-xs px-2 py-1 rounded bg-red-50 text-red-600 hover:bg-red-100">删除</button></div>
-              </div>
+        <div className="flex">
+          <div className="w-36 shrink-0 border-r border-stone-100 bg-stone-50/50">
+            <div className="px-3 py-2 text-xs text-stone-400 border-b border-stone-100">探方号</div>
+            <button onClick={() => { setActiveTrench(''); setP(1); }} className={`w-full text-left px-3 py-2 text-sm ${activeTrench === '' ? 'bg-amber-50 text-amber-700 font-medium' : 'text-stone-600 hover:bg-stone-100'}`}>全部</button>
+            {trenches.map(t => (
+              <button key={t} onClick={() => { setActiveTrench(t); setP(1); }} className={`w-full text-left px-3 py-2 text-sm truncate ${activeTrench === t ? 'bg-amber-50 text-amber-700 font-medium' : 'text-stone-600 hover:bg-stone-100'}`}>{t}</button>
             ))}
+            {trenches.length === 0 && <div className="px-3 py-2 text-xs text-stone-400">暂无探方</div>}
           </div>
-        )}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between px-5 py-3 border-t border-stone-200 text-sm">
-            <span className="text-stone-500">共 {total} 条</span>
-            <div className="flex gap-1"><button disabled={p <= 1} onClick={() => setP(p => p - 1)} className="px-3 py-1 rounded border border-stone-300 disabled:opacity-30 hover:bg-stone-100">上一页</button><span className="px-3 py-1 text-stone-600">第 {p}/{totalPages} 页</span><button disabled={p >= totalPages} onClick={() => setP(p => p + 1)} className="px-3 py-1 rounded border border-stone-300 disabled:opacity-30 hover:bg-stone-100">下一页</button></div>
+          <div className="flex-1 min-w-0">
+            {loading ? <div className="px-5 py-8 text-center text-stone-400 text-sm">加载中…</div> : diaries.length === 0 ? <div className="px-5 py-8 text-center text-stone-400 text-sm">暂无日记</div> : (
+              <div className="divide-y divide-stone-100">
+                {diaries.map(d => (
+                  <div key={d.id} className="px-5 py-3 hover:bg-stone-50 flex items-center justify-between">
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-medium text-stone-800 truncate">{d.diary_date} {d.weather}{d.trench_number && ` · ${d.trench_number}`}</div>
+                      <div className="text-xs text-stone-500 mt-0.5 truncate">{d.content.slice(0, 100)}…</div>
+                      <div className="text-xs text-stone-400 mt-0.5">修改：{fmtTime(d.updated_at)}</div>
+                    </div>
+                    <div className="flex gap-1 ml-3 shrink-0"><button onClick={() => handleView(d)} className="text-xs px-2 py-1 rounded bg-stone-100 text-stone-600 hover:bg-stone-200">查看</button><button onClick={() => handleDelete(d.id)} className="text-xs px-2 py-1 rounded bg-red-50 text-red-600 hover:bg-red-100">删除</button></div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between px-5 py-3 border-t border-stone-200 text-sm">
+                <span className="text-stone-500">共 {total} 条</span>
+                <div className="flex gap-1"><button disabled={p <= 1} onClick={() => setP(p => p - 1)} className="px-3 py-1 rounded border border-stone-300 disabled:opacity-30 hover:bg-stone-100">上一页</button><span className="px-3 py-1 text-stone-600">第 {p}/{totalPages} 页</span><button disabled={p >= totalPages} onClick={() => setP(p => p + 1)} className="px-3 py-1 rounded border border-stone-300 disabled:opacity-30 hover:bg-stone-100">下一页</button></div>
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

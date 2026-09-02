@@ -9,6 +9,7 @@ export async function GET(request: NextRequest) {
       limit: parseInt(sp.get('limit') || '20'),
       dateFrom: sp.get('dateFrom') || '',
       dateTo: sp.get('dateTo') || '',
+      trench_number: sp.get('trench_number') || '',
     });
     return NextResponse.json(result);
   } catch (error) {
