@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDiaryById, deleteDiary, updateDiary, DiaryCreateInput } from '@/db/diaries';
+import { getSession } from '@/lib/auth';
 
 export async function GET(
   request: NextRequest,
@@ -38,6 +39,10 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await getSession();
+    if (!session || session.role !== 'admin') {
+      return NextResponse.json({ error: '无权限，仅管理员可删除日记' }, { status: 403 });
+    }
     const { id } = await params;
     const ok = deleteDiary(parseInt(id));
     if (!ok) return NextResponse.json({ error: '日记不存在' }, { status: 404 });

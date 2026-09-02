@@ -160,6 +160,7 @@ function DiaryContent() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [trenches, setTrenches] = useState<string[]>([]);
   const [activeTrench, setActiveTrench] = useState('');
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const u = (key: string, value: unknown) => setForm(f => ({ ...f, [key]: value }));
 
@@ -870,12 +871,18 @@ function DiaryContent() {
   }, []);
   useEffect(() => { fetchTrenches(); }, [fetchTrenches]);
 
+  useEffect(() => {
+    fetch('/api/auth/me').then(r => r.json()).then(d => setIsAdmin(d.role === 'admin')).catch(() => setIsAdmin(false));
+  }, []);
+
   const handleDelete = async (id: number) => {
     if (!confirm('确定要删除此日记吗？')) return;
     const res = await fetch(`/api/diaries/${id}`, { method: 'DELETE' });
     if (res.ok) {
       if (editingId === id) { setEditingId(null); setGeneratedText(''); }
       fetchDiaries(); fetchTrenches();
+    } else {
+      alert((await res.json()).error || '删除失败');
     }
   };
   const handleView = (d: DiaryRecord) => {
@@ -1398,7 +1405,7 @@ function DiaryContent() {
                       <div className="text-xs text-stone-500 mt-0.5 truncate">{d.content.slice(0, 100)}…</div>
                       <div className="text-xs text-stone-400 mt-0.5">修改：{fmtTime(d.updated_at)}</div>
                     </div>
-                    <div className="flex gap-1 ml-3 shrink-0"><button onClick={() => handleView(d)} className="text-xs px-2 py-1 rounded bg-stone-100 text-stone-600 hover:bg-stone-200">查看</button><button onClick={() => handleDelete(d.id)} className="text-xs px-2 py-1 rounded bg-red-50 text-red-600 hover:bg-red-100">删除</button></div>
+                    <div className="flex gap-1 ml-3 shrink-0 items-center"><button onClick={() => handleView(d)} className="text-xs px-2 py-1 rounded bg-stone-100 text-stone-600 hover:bg-stone-200">查看</button><a href={`/api/diaries/${d.id}/doc`} className="text-xs px-2 py-1 rounded bg-stone-100 text-stone-600 hover:bg-stone-200">下载</a>{isAdmin && <button onClick={() => handleDelete(d.id)} className="text-xs px-2 py-1 rounded bg-red-50 text-red-600 hover:bg-red-100">删除</button>}</div>
                   </div>
                 ))}
               </div>
