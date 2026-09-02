@@ -46,6 +46,8 @@ function migrateSchema() {
     "ALTER TABLE tool_checkin_records ADD COLUMN checkin_quantity INTEGER DEFAULT 1",
     "ALTER TABLE excavation_diaries ADD COLUMN wind_direction TEXT DEFAULT ''",
     "ALTER TABLE excavation_diaries ADD COLUMN humidity TEXT DEFAULT ''",
+    "ALTER TABLE excavation_diaries ADD COLUMN feature_data TEXT DEFAULT ''",
+    "ALTER TABLE excavation_features ADD COLUMN feature_type TEXT DEFAULT ''",
   ];
   for (const sql of migrations) {
     try { db.exec(sql); } catch { /* column already exists */ }

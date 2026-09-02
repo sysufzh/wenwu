@@ -830,7 +830,14 @@ function DiaryContent() {
     setSaving(true);
     const res = await fetch('/api/diaries', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ diary_date: form.diary_date, weather: form.weather, wind_direction: form.wind_direction, humidity: form.humidity, trench_number: form.trench_number, recorder: form.recorder, content: generatedText }),
+      body: JSON.stringify({
+        diary_date: form.diary_date, weather: form.weather, wind_direction: form.wind_direction,
+        humidity: form.humidity, trench_number: form.trench_number, recorder: form.recorder,
+        content: generatedText,
+        feature_data: JSON.stringify({
+          feature_panels: form.has_feature_excavation ? form.feature_panels.filter(fp => fp.feature_number) : [],
+        }),
+      }),
     });
     alert(res.ok ? '保存成功' : (await res.json()).error || '保存失败');
     if (res.ok) fetchDiaries();

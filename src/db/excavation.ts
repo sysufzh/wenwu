@@ -3,6 +3,7 @@ import { getDb } from './index';
 export interface ExcavationFeature {
   id: number;
   feature_number: string;
+  feature_type: string;
   trench_number: string;
   position: string;
   shape: string;
@@ -63,6 +64,7 @@ export interface FeatureWithChildren extends ExcavationFeature {
 
 export interface FeatureInput {
   feature_number?: string;
+  feature_type?: string;
   trench_number?: string;
   position?: string;
   shape?: string;
@@ -119,7 +121,7 @@ export interface FeatureListParams {
 }
 
 const FEATURE_FIELDS = [
-  'feature_number', 'trench_number', 'position', 'shape', 'opening_size', 'depth',
+  'feature_number', 'feature_type', 'trench_number', 'position', 'shape', 'opening_size', 'depth',
   'bottom_size', 'drawing_info', 'photo_info', 'excavation_process', 'wall_bottom_detail',
   'stratigraphy', 'dating', 'function_nature', 'sampling', 'remarks', 'recorder',
   'record_date', 'site_name', 'district', 'year',
@@ -171,13 +173,14 @@ export function createFeature(input: FeatureInput): FeatureWithChildren {
 
   const stmt = db.prepare(
     `INSERT INTO excavation_features (${FEATURE_FIELDS}, created_at, updated_at)
-     VALUES (@feature_number, @trench_number, @position, @shape, @opening_size, @depth,
+     VALUES (@feature_number, @feature_type, @trench_number, @position, @shape, @opening_size, @depth,
              @bottom_size, @drawing_info, @photo_info, @excavation_process, @wall_bottom_detail,
              @stratigraphy, @dating, @function_nature, @sampling, @remarks, @recorder,
              @record_date, @site_name, @district, @year, @created_at, @updated_at)`
   );
   const result = stmt.run({
     feature_number: input.feature_number || '',
+    feature_type: input.feature_type || '',
     trench_number: input.trench_number || '',
     position: input.position || '',
     shape: input.shape || '',
@@ -215,7 +218,7 @@ export function updateFeature(id: number, input: FeatureInput): FeatureWithChild
   const now = new Date().toISOString();
   const stmt = db.prepare(
     `UPDATE excavation_features SET
-      feature_number = @feature_number, trench_number = @trench_number, position = @position,
+      feature_number = @feature_number, feature_type = @feature_type, trench_number = @trench_number, position = @position,
       shape = @shape, opening_size = @opening_size, depth = @depth, bottom_size = @bottom_size,
       drawing_info = @drawing_info, photo_info = @photo_info, excavation_process = @excavation_process,
       wall_bottom_detail = @wall_bottom_detail, stratigraphy = @stratigraphy, dating = @dating,
@@ -227,6 +230,7 @@ export function updateFeature(id: number, input: FeatureInput): FeatureWithChild
   stmt.run({
     id,
     feature_number: input.feature_number ?? existing.feature_number,
+    feature_type: input.feature_type ?? existing.feature_type,
     trench_number: input.trench_number ?? existing.trench_number,
     position: input.position ?? existing.position,
     shape: input.shape ?? existing.shape,

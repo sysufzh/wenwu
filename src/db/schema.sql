@@ -166,6 +166,7 @@ CREATE TABLE IF NOT EXISTS excavation_diaries (
   trench_number TEXT DEFAULT '',
   recorder TEXT DEFAULT '',
   content TEXT NOT NULL DEFAULT '',
+  feature_data TEXT DEFAULT '',
   created_at DATETIME DEFAULT (datetime('now','localtime')),
   updated_at DATETIME DEFAULT (datetime('now','localtime'))
 );
@@ -186,6 +187,7 @@ CREATE TABLE IF NOT EXISTS seal_usage (
 CREATE TABLE IF NOT EXISTS excavation_features (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   feature_number TEXT NOT NULL DEFAULT '',
+  feature_type TEXT DEFAULT '',
   trench_number TEXT DEFAULT '',
   position TEXT DEFAULT '',
   shape TEXT DEFAULT '',

@@ -14,8 +14,12 @@ interface Artifact {
   id: number; layer_number: string; type: string; quantity: string; number: string; remarks: string;
 }
 
+interface RelatedDiary {
+  id: number; diary_date: string; recorder: string; trench_number: string;
+}
+
 interface Feature {
-  id: number; feature_number: string; trench_number: string; site_name: string; year: string; district: string;
+  id: number; feature_number: string; feature_type: string; trench_number: string; site_name: string; year: string; district: string;
   position: string; shape: string; opening_size: string; depth: string; bottom_size: string;
   drawing_info: string; photo_info: string; excavation_process: string; wall_bottom_detail: string;
   stratigraphy: string; dating: string; function_nature: string; sampling: string; remarks: string;
@@ -54,6 +58,7 @@ function FeatureDetail() {
   const [feature, setFeature] = useState<Feature | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [relatedDiaries, setRelatedDiaries] = useState<RelatedDiary[]>([]);
 
   const fetchFeature = useCallback(async () => {
     const res = await fetch(`/api/excavation/${params.id}`);
@@ -68,6 +73,14 @@ function FeatureDetail() {
       if (data.role === 'admin') setIsAdmin(true);
     });
   }, []);
+
+  useEffect(() => {
+    if (!feature) return;
+    fetch(`/api/excavation/import?feature_number=${encodeURIComponent(feature.feature_number)}`)
+      .then(r => r.json())
+      .then(data => { if (data.diaries) setRelatedDiaries(data.diaries); })
+      .catch(() => {});
+  }, [feature]);
 
   const handleDelete = async () => {
     if (!confirm('确定要删除该遗迹吗？此操作不可撤销。')) return;
@@ -109,9 +122,25 @@ function FeatureDetail() {
         </div>
       </div>
 
+      <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-5">
+        <h3 className="text-base font-bold text-stone-800 border-b border-stone-100 pb-2 mb-2">相关日记（{relatedDiaries.length}）</h3>
+        {relatedDiaries.length === 0 ? <p className="text-stone-400 text-sm">无（在考古日记中录入该遗迹号后，此处自动关联）</p> : (
+          <div className="space-y-1">
+            {relatedDiaries.map(d => (
+              <div key={d.id} className="text-sm text-stone-700">
+                <span className="text-stone-500">{d.diary_date}</span>
+                {d.trench_number && <span className="text-stone-500"> · {d.trench_number}</span>}
+                {d.recorder && <span className="text-stone-500"> · {d.recorder}</span>}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-5 space-y-1">
         <h3 className="text-base font-bold text-stone-800 border-b border-stone-100 pb-2 mb-2">基本信息</h3>
         <Field label="遗迹号" value={feature.feature_number} />
+        <Field label="遗迹类型" value={feature.feature_type} />
         <Field label="探方号" value={feature.trench_number} />
         <Field label="遗址名" value={feature.site_name} />
         <Field label="年度" value={feature.year} />

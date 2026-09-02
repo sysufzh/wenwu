@@ -14,7 +14,7 @@ interface ArtifactInput {
 }
 
 interface FeatureFormValues {
-  feature_number: string; trench_number: string; site_name: string; year: string; district: string;
+  feature_number: string; feature_type: string; trench_number: string; site_name: string; year: string; district: string;
   position: string; shape: string; opening_size: string; depth: string; bottom_size: string;
   drawing_info: string; photo_info: string; excavation_process: string; wall_bottom_detail: string;
   stratigraphy: string; dating: string; function_nature: string; sampling: string; remarks: string;
@@ -32,7 +32,7 @@ const emptyArtifact = (): ArtifactInput => ({
 });
 
 const defaultValues: FeatureFormValues = {
-  feature_number: '', trench_number: '', site_name: '牛头山遗址', year: '2025', district: '',
+  feature_number: '', feature_type: '', trench_number: '', site_name: '牛头山遗址', year: '2025', district: '',
   position: '', shape: '', opening_size: '', depth: '', bottom_size: '',
   drawing_info: '', photo_info: '', excavation_process: '', wall_bottom_detail: '',
   stratigraphy: '', dating: '', function_nature: '', sampling: '', remarks: '',
@@ -63,6 +63,7 @@ function Field({ label, required, children }: { label: string; required?: boolea
 export default function FeatureForm({ initial, id }: { initial?: FeatureFormValues & { layers: LayerInput[]; artifacts: ArtifactInput[] }; id?: number }) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [form, setForm] = useState<FeatureFormValues>(initial ? { ...defaultValues, ...initial } : defaultValues);
   const [layers, setLayers] = useState<LayerInput[]>(initial?.layers?.length ? initial.layers : [emptyLayer()]);
   const [artifacts, setArtifacts] = useState<ArtifactInput[]>(initial?.artifacts?.length ? initial.artifacts : [emptyArtifact()]);
@@ -75,6 +76,31 @@ export default function FeatureForm({ initial, id }: { initial?: FeatureFormValu
   const delLayer = (i: number) => setLayers(ls => ls.filter((_, idx) => idx !== i));
   const addArtifact = () => setArtifacts(as => [...as, emptyArtifact()]);
   const delArtifact = (i: number) => setArtifacts(as => as.filter((_, idx) => idx !== i));
+
+  const handleImport = async () => {
+    const num = form.feature_number.trim();
+    if (!num) { alert('请先填写遗迹号'); return; }
+    setImporting(true);
+    try {
+      const res = await fetch(`/api/excavation/import?feature_number=${encodeURIComponent(num)}`);
+      const data = await res.json();
+      if (!res.ok) { alert(data.error || '导入失败'); return; }
+      const imported = data.feature as FeatureFormValues & { layers: LayerInput[]; artifacts: ArtifactInput[] };
+      setForm(f => {
+        const next = { ...f };
+        for (const [k, v] of Object.entries(imported)) {
+          if (k === 'layers' || k === 'artifacts') continue;
+          if (typeof v === 'string' && v.trim()) next[k as keyof FeatureFormValues] = v;
+        }
+        return next;
+      });
+      if (imported.layers?.length) setLayers(imported.layers);
+      if (imported.artifacts?.length) setArtifacts(imported.artifacts);
+      alert('已从日记导入，请核对后保存');
+    } finally {
+      setImporting(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -99,9 +125,21 @@ export default function FeatureForm({ initial, id }: { initial?: FeatureFormValu
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <Section title="基本信息">
+        <div className="flex items-center gap-3">
+          <button type="button" onClick={handleImport} disabled={importing} className="px-3 py-2 rounded-lg text-sm bg-stone-800 text-white hover:bg-stone-900 disabled:opacity-50">
+            {importing ? '导入中…' : '从日记导入'}
+          </button>
+          <span className="text-xs text-stone-400">按遗迹号从已保存的考古日记回填内容</span>
+        </div>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           <Field label="遗迹号" required>
             <input className={inputCls} value={form.feature_number} onChange={e => set('feature_number', e.target.value)} placeholder="如 H50" />
+          </Field>
+          <Field label="遗迹类型">
+            <input className={inputCls} value={form.feature_type} onChange={e => set('feature_type', e.target.value)} placeholder="如 灰坑" list="feature-types" />
+            <datalist id="feature-types">
+              <option value="灰坑" /><option value="灶" /><option value="柱洞" /><option value="沟" /><option value="房址" />
+            </datalist>
           </Field>
           <Field label="探方号">
             <input className={inputCls} value={form.trench_number} onChange={e => set('trench_number', e.target.value)} placeholder="如 TN09E04" />

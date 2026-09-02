@@ -9,6 +9,7 @@ export interface ExcavationDiary {
   trench_number: string;
   recorder: string;
   content: string;
+  feature_data: string;
   created_at: string;
   updated_at: string;
 }
@@ -21,6 +22,7 @@ export interface DiaryCreateInput {
   trench_number?: string;
   recorder?: string;
   content: string;
+  feature_data?: string;
 }
 
 export function getDiaries(params: { page?: number; limit?: number; dateFrom?: string; dateTo?: string } = {}) {
@@ -66,8 +68,8 @@ export function createDiary(input: DiaryCreateInput): ExcavationDiary {
   const db = getDb();
   const now = new Date().toISOString();
   const stmt = db.prepare(
-    `INSERT INTO excavation_diaries (diary_date, weather, wind_direction, humidity, trench_number, recorder, content, created_at, updated_at)
-     VALUES (@diary_date, @weather, @wind_direction, @humidity, @trench_number, @recorder, @content, @created_at, @updated_at)`
+    `INSERT INTO excavation_diaries (diary_date, weather, wind_direction, humidity, trench_number, recorder, content, feature_data, created_at, updated_at)
+     VALUES (@diary_date, @weather, @wind_direction, @humidity, @trench_number, @recorder, @content, @feature_data, @created_at, @updated_at)`
   );
   const result = stmt.run({
     diary_date: input.diary_date,
@@ -77,6 +79,7 @@ export function createDiary(input: DiaryCreateInput): ExcavationDiary {
     trench_number: input.trench_number || '',
     recorder: input.recorder || '',
     content: input.content,
+    feature_data: input.feature_data || '',
     created_at: now,
     updated_at: now,
   });
@@ -87,4 +90,23 @@ export function deleteDiary(id: number): boolean {
   const db = getDb();
   const result = db.prepare('DELETE FROM excavation_diaries WHERE id = ?').run(id);
   return result.changes > 0;
+}
+
+// 按遗迹号取回相关日记（LIKE 粗筛 + JS 精筛 feature_data 里的 feature_number）
+export function getDiariesByFeatureNumber(featureNumber: string): ExcavationDiary[] {
+  if (!featureNumber) return [];
+  const db = getDb();
+  const rows = db.prepare(
+    `SELECT * FROM excavation_diaries WHERE feature_data LIKE ? ORDER BY diary_date ASC, id ASC`
+  ).all(`%${featureNumber}%`) as ExcavationDiary[];
+
+  return rows.filter(d => {
+    try {
+      const data = JSON.parse(d.feature_data || '{}');
+      const panels = Array.isArray(data.feature_panels) ? data.feature_panels : [];
+      return panels.some((fp: { feature_number?: string }) => fp.feature_number === featureNumber);
+    } catch {
+      return false;
+    }
+  });
 }

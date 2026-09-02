@@ -8,6 +8,7 @@ export function seedExcavation() {
 
   const feature = {
     feature_number: 'H50',
+    feature_type: '灰坑',
     trench_number: 'TN09E04',
     position: '横穿TN09E04西、南壁',
     shape: '不规则弧形',
@@ -33,12 +34,12 @@ export function seedExcavation() {
   const now = new Date().toISOString();
   const featureId = db.prepare(
     `INSERT INTO excavation_features (
-      feature_number, trench_number, position, shape, opening_size, depth, bottom_size,
+      feature_number, feature_type, trench_number, position, shape, opening_size, depth, bottom_size,
       drawing_info, photo_info, excavation_process, wall_bottom_detail, stratigraphy, dating,
       function_nature, sampling, remarks, recorder, record_date, site_name, district, year,
       created_at, updated_at
     ) VALUES (
-      @feature_number, @trench_number, @position, @shape, @opening_size, @depth, @bottom_size,
+      @feature_number, @feature_type, @trench_number, @position, @shape, @opening_size, @depth, @bottom_size,
       @drawing_info, @photo_info, @excavation_process, @wall_bottom_detail, @stratigraphy, @dating,
       @function_nature, @sampling, @remarks, @recorder, @record_date, @site_name, @district, @year,
       @created_at, @updated_at
