@@ -1334,7 +1334,11 @@ function DiaryContent() {
               <button onClick={handleSave} disabled={saving} className="text-xs px-3 py-1 rounded bg-amber-700 text-white hover:bg-amber-800 disabled:opacity-50">{saving ? '保存中…' : '保存'}</button>
             </div>
           </div>
-          <pre className="px-5 py-4 text-sm text-stone-700 whitespace-pre-wrap font-sans leading-relaxed">{generatedText}</pre>
+          <textarea
+            value={generatedText}
+            onChange={e => setGeneratedText(e.target.value)}
+            className="w-full px-5 py-4 text-sm text-stone-700 font-sans leading-relaxed min-h-[320px] resize-y bg-transparent border-0 focus:outline-none focus:ring-0"
+          />
         </div>
       )}
 
