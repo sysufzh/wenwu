@@ -4,14 +4,16 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
 export default function HomePage() {
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [role, setRole] = useState('');
   const [backupMsg, setBackupMsg] = useState('');
 
   useEffect(() => {
     fetch('/api/auth/me').then(r => r.json()).then(data => {
-      if (data.role === 'admin') setIsAdmin(true);
+      setRole(data.role || '');
     });
   }, []);
+
+  const isAdmin = role === 'admin';
 
   const handleBackup = async () => {
     setBackupMsg('');
@@ -43,6 +45,7 @@ export default function HomePage() {
 
         {/* Entry cards */}
         <div className="space-y-4">
+          {isAdmin && (<>
           <Link
             href="/relics"
             className="flex items-center gap-5 bg-white rounded-xl shadow-sm border border-stone-200 p-6 hover:border-amber-400 hover:shadow-md transition-all"
@@ -108,6 +111,7 @@ export default function HomePage() {
               <div className="text-sm text-stone-500 mt-0.5">用章日期、事项、数量、盖章人</div>
             </div>
           </Link>
+          </>)}
 
           <Link
             href="/diary"
