@@ -63,7 +63,7 @@ function migrateSchema() {
 function seedUsers() {
   const defaultUsers = [
     { username: 'admin', password: 'admin123', role: 'admin', display_name: '管理员' },
-    { username: 'user1', password: 'user123', role: 'user', display_name: '库管员1' },
+    { username: 'user1', password: '12345678', role: 'user', display_name: '库管员1' },
     { username: 'user2', password: 'user123', role: 'user', display_name: '库管员2' },
     { username: 'user3', password: 'user123', role: 'user', display_name: '库管员3' },
     { username: 'user4', password: 'user123', role: 'user', display_name: '库管员4' },
