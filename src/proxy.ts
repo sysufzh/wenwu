@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionFromRequest } from '@/lib/auth';
+import { canAccessAllSubsystems } from '@/lib/access';
 
 const PUBLIC_PATHS = ['/login', '/api/auth/login'];
 
@@ -33,8 +34,8 @@ export default async function proxy(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // 非管理员仅能访问考古日记与田野考古发掘系统
-  if (session.role !== 'admin' && RESTRICTED_PREFIXES.some(p => pathname.startsWith(p))) {
+  // 仅 user2-user11 被限制为考古日记与田野考古发掘系统
+  if (!canAccessAllSubsystems(session.role, session.username) && RESTRICTED_PREFIXES.some(p => pathname.startsWith(p))) {
     return NextResponse.redirect(new URL('/', request.url));
   }
 

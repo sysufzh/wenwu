@@ -2,18 +2,22 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { canAccessAllSubsystems } from '@/lib/access';
 
 export default function HomePage() {
   const [role, setRole] = useState('');
+  const [username, setUsername] = useState('');
   const [backupMsg, setBackupMsg] = useState('');
 
   useEffect(() => {
     fetch('/api/auth/me').then(r => r.json()).then(data => {
       setRole(data.role || '');
+      setUsername(data.username || '');
     });
   }, []);
 
   const isAdmin = role === 'admin';
+  const canSeeAll = canAccessAllSubsystems(role, username);
 
   const handleBackup = async () => {
     setBackupMsg('');
@@ -45,7 +49,7 @@ export default function HomePage() {
 
         {/* Entry cards */}
         <div className="space-y-4">
-          {isAdmin && (<>
+          {canSeeAll && (<>
           <Link
             href="/relics"
             className="flex items-center gap-5 bg-white rounded-xl shadow-sm border border-stone-200 p-6 hover:border-amber-400 hover:shadow-md transition-all"
