@@ -1,6 +1,6 @@
 import { Document, Paragraph, TableRow } from 'docx';
 import { title, infoLine, kvRow, makeTable, makeDoc, UNIT_NAME, run } from './common';
-import { FeatureWithChildren, FeatureLayer } from '@/db/excavation';
+import { FeatureWithChildren, FeatureLayer, layerInclusionsText, composeSpecimensText } from '@/db/excavation';
 
 function layerRows(l: FeatureLayer): TableRow[] {
   return [
@@ -10,7 +10,12 @@ function layerRows(l: FeatureLayer): TableRow[] {
     kvRow('致密度', l.density),
     kvRow('厚度', l.thickness),
     kvRow('堆积形状', l.deposit_shape),
-    kvRow('包含物', l.inclusions, { valueSize: 21 }),
+    kvRow('包含物', layerInclusionsText(l), { valueSize: 21 }),
+    kvRow('标本', composeSpecimensText(l.specimens_json), { valueSize: 21 }),
+    kvRow('土样', l.soil_sample),
+    kvRow('上界面', l.upper_interface),
+    kvRow('下界面', l.lower_interface),
+    kvRow('观察', l.observation, { valueSize: 21 }),
     kvRow('保存状况', l.preservation),
     kvRow('清理方式', l.cleaning_method, { valueSize: 21 }),
     kvRow('堆积性质', l.deposit_nature),

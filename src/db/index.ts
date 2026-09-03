@@ -48,6 +48,12 @@ function migrateSchema() {
     "ALTER TABLE excavation_diaries ADD COLUMN humidity TEXT DEFAULT ''",
     "ALTER TABLE excavation_diaries ADD COLUMN feature_data TEXT DEFAULT ''",
     "ALTER TABLE excavation_features ADD COLUMN feature_type TEXT DEFAULT ''",
+    "ALTER TABLE feature_layers ADD COLUMN inclusions_json TEXT DEFAULT ''",
+    "ALTER TABLE feature_layers ADD COLUMN specimens_json TEXT DEFAULT ''",
+    "ALTER TABLE feature_layers ADD COLUMN soil_sample TEXT DEFAULT ''",
+    "ALTER TABLE feature_layers ADD COLUMN upper_interface TEXT DEFAULT ''",
+    "ALTER TABLE feature_layers ADD COLUMN lower_interface TEXT DEFAULT ''",
+    "ALTER TABLE feature_layers ADD COLUMN observation TEXT DEFAULT ''",
   ];
   for (const sql of migrations) {
     try { db.exec(sql); } catch { /* column already exists */ }

@@ -2,11 +2,24 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import type { InclusionRow, SpecimenRow } from '@/db/excavation';
 
 interface LayerInput {
   layer_number: string; soil_color: string; soil_texture: string; density: string;
-  thickness: string; deposit_shape: string; inclusions: string; preservation: string;
-  cleaning_method: string; deposit_nature: string; depth_text: string; remarks: string;
+  thickness: string; deposit_shape: string;
+  inclusions: InclusionRow[];
+  specimens: SpecimenRow[];
+  soil_sample: string; upper_interface: string; lower_interface: string; observation: string;
+  preservation: string; cleaning_method: string; deposit_nature: string; depth_text: string; remarks: string;
+}
+
+// DB 读出的层结构（编辑回显用，包含物/标本是 JSON 文本）
+interface RawLayer {
+  layer_number?: string; soil_color?: string; soil_texture?: string; density?: string;
+  thickness?: string; deposit_shape?: string;
+  inclusions?: string; inclusions_json?: string; specimens_json?: string;
+  soil_sample?: string; upper_interface?: string; lower_interface?: string; observation?: string;
+  preservation?: string; cleaning_method?: string; deposit_nature?: string; depth_text?: string; remarks?: string;
 }
 
 interface ArtifactInput {
@@ -21,10 +34,16 @@ interface FeatureFormValues {
   recorder: string; record_date: string;
 }
 
+const emptyInclusion = (): InclusionRow => ({ type: '', proportion: '', particleSize: '', sorting: '一般', roundness: '略有棱角的' });
+const emptySpecimen = (): SpecimenRow => ({ number: '', category: '', quantity: '' });
+
 const emptyLayer = (): LayerInput => ({
   layer_number: '', soil_color: '', soil_texture: '', density: '', thickness: '',
-  deposit_shape: '', inclusions: '', preservation: '', cleaning_method: '', deposit_nature: '',
-  depth_text: '', remarks: '',
+  deposit_shape: '',
+  inclusions: [emptyInclusion()],
+  specimens: [emptySpecimen()],
+  soil_sample: '', upper_interface: '', lower_interface: '', observation: '',
+  preservation: '', cleaning_method: '', deposit_nature: '', depth_text: '', remarks: '',
 });
 
 const emptyArtifact = (): ArtifactInput => ({
@@ -41,6 +60,41 @@ const defaultValues: FeatureFormValues = {
 
 const inputCls = 'w-full px-3 py-2 border border-stone-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-500';
 const labelCls = 'block text-sm font-medium text-stone-700 mb-1';
+
+const ifShapeOpts = ['水平状', '坡状', '波状', '凸镜状', '凹镜状', '其它'];
+const sortOpts = ['好', '一般', '较差', '极不均匀'];
+const roundOpts = ['棱角的', '较有棱角的', '略有棱角的', '略圆滑的', '圆滑的', '很圆滑的'];
+
+function parseJson<T>(s: string | undefined, fallback: T): T {
+  if (!s) return fallback;
+  try { return JSON.parse(s) as T; } catch { return fallback; }
+}
+
+function toFormLayer(raw: RawLayer): LayerInput {
+  const inclusions = parseJson<InclusionRow[]>(raw.inclusions_json, []);
+  if (inclusions.length === 0 && raw.inclusions) {
+    inclusions.push({ type: raw.inclusions, proportion: '', particleSize: '', sorting: '', roundness: '' });
+  }
+  return {
+    layer_number: raw.layer_number ?? '',
+    soil_color: raw.soil_color ?? '',
+    soil_texture: raw.soil_texture ?? '',
+    density: raw.density ?? '',
+    thickness: raw.thickness ?? '',
+    deposit_shape: raw.deposit_shape ?? '',
+    inclusions,
+    specimens: parseJson<SpecimenRow[]>(raw.specimens_json, []),
+    soil_sample: raw.soil_sample ?? '',
+    upper_interface: raw.upper_interface ?? '',
+    lower_interface: raw.lower_interface ?? '',
+    observation: raw.observation ?? '',
+    preservation: raw.preservation ?? '',
+    cleaning_method: raw.cleaning_method ?? '',
+    deposit_nature: raw.deposit_nature ?? '',
+    depth_text: raw.depth_text ?? '',
+    remarks: raw.remarks ?? '',
+  };
+}
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -60,16 +114,22 @@ function Field({ label, required, children }: { label: string; required?: boolea
   );
 }
 
-export default function FeatureForm({ initial, id }: { initial?: FeatureFormValues & { layers: LayerInput[]; artifacts: ArtifactInput[] }; id?: number }) {
+export default function FeatureForm({ initial, id }: { initial?: FeatureFormValues & { layers: RawLayer[]; artifacts: ArtifactInput[] }; id?: number }) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [importing, setImporting] = useState(false);
   const [form, setForm] = useState<FeatureFormValues>(initial ? { ...defaultValues, ...initial } : defaultValues);
-  const [layers, setLayers] = useState<LayerInput[]>(initial?.layers?.length ? initial.layers : [emptyLayer()]);
+  const [layers, setLayers] = useState<LayerInput[]>(initial?.layers?.length ? initial.layers.map(toFormLayer) : [emptyLayer()]);
   const [artifacts, setArtifacts] = useState<ArtifactInput[]>(initial?.artifacts?.length ? initial.artifacts : [emptyArtifact()]);
 
   const set = (key: keyof FeatureFormValues, value: string) => setForm(f => ({ ...f, [key]: value }));
-  const setLayer = (i: number, key: keyof LayerInput, value: string) => setLayers(ls => ls.map((l, idx) => idx === i ? { ...l, [key]: value } : l));
+  const setLayer = (i: number, key: Exclude<keyof LayerInput, 'inclusions' | 'specimens'>, value: string) => setLayers(ls => ls.map((l, idx) => idx === i ? { ...l, [key]: value } : l));
+  const setInclusion = (i: number, ri: number, key: keyof InclusionRow, value: string) => setLayers(ls => ls.map((l, idx) => idx === i ? { ...l, inclusions: l.inclusions.map((inc, j) => j === ri ? { ...inc, [key]: value } : inc) } : l));
+  const addInclusion = (i: number) => setLayers(ls => ls.map((l, idx) => idx === i ? { ...l, inclusions: [...l.inclusions, emptyInclusion()] } : l));
+  const delInclusion = (i: number, ri: number) => setLayers(ls => ls.map((l, idx) => idx === i ? { ...l, inclusions: l.inclusions.filter((_, j) => j !== ri) } : l));
+  const setSpecimen = (i: number, ri: number, key: keyof SpecimenRow, value: string) => setLayers(ls => ls.map((l, idx) => idx === i ? { ...l, specimens: l.specimens.map((sp, j) => j === ri ? { ...sp, [key]: value } : sp) } : l));
+  const addSpecimen = (i: number) => setLayers(ls => ls.map((l, idx) => idx === i ? { ...l, specimens: [...l.specimens, emptySpecimen()] } : l));
+  const delSpecimen = (i: number, ri: number) => setLayers(ls => ls.map((l, idx) => idx === i ? { ...l, specimens: l.specimens.filter((_, j) => j !== ri) } : l));
   const setArtifact = (i: number, key: keyof ArtifactInput, value: string) => setArtifacts(as => as.map((a, idx) => idx === i ? { ...a, [key]: value } : a));
 
   const addLayer = () => setLayers(ls => [...ls, emptyLayer()]);
@@ -94,7 +154,14 @@ export default function FeatureForm({ initial, id }: { initial?: FeatureFormValu
         }
         return next;
       });
-      if (imported.layers?.length) setLayers(imported.layers);
+      if (imported.layers?.length) {
+        setLayers(imported.layers.map(l => ({
+          ...emptyLayer(),
+          ...l,
+          inclusions: l.inclusions?.length ? l.inclusions : [emptyInclusion()],
+          specimens: l.specimens?.length ? l.specimens : [emptySpecimen()],
+        })));
+      }
       if (imported.artifacts?.length) setArtifacts(imported.artifacts);
       alert('已从日记导入，请核对后保存');
     } finally {
@@ -232,7 +299,66 @@ export default function FeatureForm({ initial, id }: { initial?: FeatureFormValu
               <Field label="保存状况"><input className={inputCls} value={l.preservation} onChange={e => setLayer(i, 'preservation', e.target.value)} /></Field>
               <Field label="堆积性质"><input className={inputCls} value={l.deposit_nature} onChange={e => setLayer(i, 'deposit_nature', e.target.value)} /></Field>
             </div>
-            <Field label="包含物"><textarea rows={2} className={inputCls} value={l.inclusions} onChange={e => setLayer(i, 'inclusions', e.target.value)} /></Field>
+
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs font-medium text-stone-600">包含物</span>
+                <button type="button" onClick={() => addInclusion(i)} className="text-xs text-amber-700 hover:text-amber-800">+ 添加</button>
+              </div>
+              <div className="grid grid-cols-5 gap-1.5 mb-1 text-xs text-stone-400 px-1">
+                <span>种类</span><span>比例</span><span>粒径</span><span>分选度</span><span>圆整度</span>
+              </div>
+              {l.inclusions.map((inc, ri) => (
+                <div key={ri} className="grid grid-cols-5 gap-1.5 mb-1.5 items-end">
+                  <div><input value={inc.type ?? ''} onChange={e => setInclusion(i, ri, 'type', e.target.value)} className={inputCls} placeholder="种类" /></div>
+                  <div><input value={inc.proportion ?? ''} onChange={e => setInclusion(i, ri, 'proportion', e.target.value)} className={inputCls} placeholder="比例" /></div>
+                  <div><input value={inc.particleSize ?? ''} onChange={e => setInclusion(i, ri, 'particleSize', e.target.value)} className={inputCls} placeholder="粒径cm" /></div>
+                  <div><select value={inc.sorting ?? ''} onChange={e => setInclusion(i, ri, 'sorting', e.target.value)} className={inputCls}>{sortOpts.map(o => <option key={o}>{o}</option>)}</select></div>
+                  <div className="flex gap-1">
+                    <select value={inc.roundness ?? ''} onChange={e => setInclusion(i, ri, 'roundness', e.target.value)} className={inputCls}>{roundOpts.map(o => <option key={o}>{o}</option>)}</select>
+                    {l.inclusions.length > 1 && <button type="button" onClick={() => delInclusion(i, ri)} className="text-red-500 text-xs shrink-0">✕</button>}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs font-medium text-stone-600">采集标本</span>
+                <button type="button" onClick={() => addSpecimen(i)} className="text-xs text-amber-700 hover:text-amber-800">+ 添加</button>
+              </div>
+              <div className="grid grid-cols-3 gap-1.5 mb-1 text-xs text-stone-400 px-1">
+                <span>标本编号</span><span>类别</span><span>数量</span>
+              </div>
+              {l.specimens.map((sp, ri) => (
+                <div key={ri} className="grid grid-cols-3 gap-1.5 mb-1.5 items-end">
+                  <div><input value={sp.number ?? ''} onChange={e => setSpecimen(i, ri, 'number', e.target.value)} className={inputCls} placeholder="编号" /></div>
+                  <div><input value={sp.category ?? ''} onChange={e => setSpecimen(i, ri, 'category', e.target.value)} className={inputCls} placeholder="类别（土样/陶片/骨骼/炭样）" /></div>
+                  <div className="flex gap-1">
+                    <input value={sp.quantity ?? ''} onChange={e => setSpecimen(i, ri, 'quantity', e.target.value)} className={inputCls} placeholder="数量" />
+                    {l.specimens.length > 1 && <button type="button" onClick={() => delSpecimen(i, ri)} className="text-red-500 text-xs shrink-0">✕</button>}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+              <Field label="土样"><input className={inputCls} value={l.soil_sample} onChange={e => setLayer(i, 'soil_sample', e.target.value)} placeholder="土样采集" /></Field>
+              <Field label="上界面">
+                <select value={l.upper_interface} onChange={e => setLayer(i, 'upper_interface', e.target.value)} className={inputCls}>
+                  <option value="">—</option>
+                  {ifShapeOpts.map(o => <option key={o} value={o}>{o}</option>)}
+                </select>
+              </Field>
+              <Field label="下界面">
+                <select value={l.lower_interface} onChange={e => setLayer(i, 'lower_interface', e.target.value)} className={inputCls}>
+                  <option value="">—</option>
+                  {ifShapeOpts.map(o => <option key={o} value={o}>{o}</option>)}
+                </select>
+              </Field>
+            </div>
+            <Field label="观察"><textarea rows={2} className={inputCls} value={l.observation} onChange={e => setLayer(i, 'observation', e.target.value)} /></Field>
+
             <Field label="清理方式"><textarea rows={2} className={inputCls} value={l.cleaning_method} onChange={e => setLayer(i, 'cleaning_method', e.target.value)} /></Field>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               <Field label="深度"><input className={inputCls} value={l.depth_text} onChange={e => setLayer(i, 'depth_text', e.target.value)} /></Field>

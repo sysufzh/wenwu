@@ -1,10 +1,8 @@
 import { getDiariesByFeatureNumber } from './diaries';
-import { FeatureInput, LayerInput, ArtifactInput } from './excavation';
+import { FeatureInput, LayerInput, ArtifactInput, InclusionRow, SpecimenRow } from './excavation';
 
 // —— 日记侧结构化数据形状（与 src/app/diary/page.tsx 的 FeaturePanel 对应）——
-interface InclusionRow { type?: string; proportion?: string; particleSize?: string; sorting?: string; roundness?: string; }
 interface ArtifactRow { type?: string; quantity?: string; number?: string; }
-interface SpecimenRow { number?: string; category?: string; quantity?: string; }
 interface SmallFindRow { number?: string; category?: string; coordinate?: string; location?: string; }
 
 interface Deposit {
@@ -67,18 +65,6 @@ function lastNonEmpty(values: (string | undefined)[]): string {
   return '';
 }
 
-function composeInclusionsText(inclusions: InclusionRow[] | undefined): string {
-  if (!inclusions) return '';
-  return inclusions
-    .filter(inc => inc.type)
-    .map(inc => {
-      const detail = [inc.proportion, inc.particleSize && `粒径${inc.particleSize}cm`, inc.sorting && `分选${inc.sorting}`, inc.roundness]
-        .filter(Boolean).join('，');
-      return detail ? `${inc.type}（${detail}）` : inc.type;
-    })
-    .join('；');
-}
-
 function normalizeDeposit(d: Deposit & { soil_density?: string; texture?: string; color?: string }): Deposit {
   return {
     layer: d.layer,
@@ -97,8 +83,6 @@ function normalizeDeposit(d: Deposit & { soil_density?: string; texture?: string
 }
 
 function depositToLayer(d: Deposit): LayerInput {
-  const remarks = [d.observation, d.upper_interface && `上界面呈${d.upper_interface}`, d.lower_interface && `下界面呈${d.lower_interface}`]
-    .filter(Boolean).join('；');
   return {
     layer_number: d.layer || '',
     soil_color: d.soil_color || '',
@@ -106,12 +90,17 @@ function depositToLayer(d: Deposit): LayerInput {
     density: d.density || '',
     thickness: d.thickness || '',
     deposit_shape: '',
-    inclusions: composeInclusionsText(d.inclusions),
+    inclusions: d.inclusions || [],
+    specimens: d.specimens || [],
+    soil_sample: d.soil_sample || '',
+    upper_interface: d.upper_interface || '',
+    lower_interface: d.lower_interface || '',
+    observation: d.observation || '',
     preservation: '',
     cleaning_method: '',
     deposit_nature: '',
     depth_text: '',
-    remarks,
+    remarks: '',
   };
 }
 
@@ -120,23 +109,6 @@ function depositArtifacts(layerNumber: string, artifacts: ArtifactRow[] | undefi
   return artifacts
     .filter(a => a.type || a.number)
     .map(a => ({ layer_number: layerNumber, type: a.type || '', quantity: a.quantity || '', number: a.number || '', remarks: '' }));
-}
-
-function collectSampling(panels: FeaturePanel[]): string {
-  const parts: string[] = [];
-  for (const p of panels) {
-    const deposits: Deposit[] = [...(p.complete_deposits || []), ...(p.half_deposits || [])];
-    for (const d of deposits) {
-      if (d.specimens) {
-        for (const s of d.specimens) {
-          if (!s.number) continue;
-          parts.push(`标本${s.number}（${[s.category, s.quantity].filter(Boolean).join('，')}）`);
-        }
-      }
-      if (d.soil_sample) parts.push(`土样：${d.soil_sample}`);
-    }
-  }
-  return parts.join('\n');
 }
 
 function draftProcess(featureNumber: string, diaries: DiaryWithPanels[]): string {
@@ -227,7 +199,7 @@ export function importFeatureFromDiaries(featureNumber: string): ImportedFeature
     stratigraphy,
     wall_bottom_detail,
     excavation_process: draftProcess(featureNumber, withPanels),
-    sampling: collectSampling(allPanels),
+    sampling: '',
     recorder: lastNonEmpty(withPanels.map(d => d.recorder)),
     record_date: withPanels[withPanels.length - 1].diary_date,
     layers,

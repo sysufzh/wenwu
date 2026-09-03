@@ -26,7 +26,7 @@ export async function GET(
         'Content-Disposition': `attachment; filename="${asciiName}"; filename*=UTF-8''${encoded}`,
       },
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: '生成文档失败' }, { status: 500 });
   }
 }

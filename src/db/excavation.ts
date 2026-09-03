@@ -1,5 +1,19 @@
 import { getDb } from './index';
 
+export interface InclusionRow {
+  type?: string;
+  proportion?: string;
+  particleSize?: string;
+  sorting?: string;
+  roundness?: string;
+}
+
+export interface SpecimenRow {
+  number?: string;
+  category?: string;
+  quantity?: string;
+}
+
 export interface ExcavationFeature {
   id: number;
   feature_number: string;
@@ -38,6 +52,12 @@ export interface FeatureLayer {
   thickness: string;
   deposit_shape: string;
   inclusions: string;
+  inclusions_json: string;
+  specimens_json: string;
+  soil_sample: string;
+  upper_interface: string;
+  lower_interface: string;
+  observation: string;
   preservation: string;
   cleaning_method: string;
   deposit_nature: string;
@@ -96,7 +116,12 @@ export interface LayerInput {
   density?: string;
   thickness?: string;
   deposit_shape?: string;
-  inclusions?: string;
+  inclusions?: InclusionRow[];
+  specimens?: SpecimenRow[];
+  soil_sample?: string;
+  upper_interface?: string;
+  lower_interface?: string;
+  observation?: string;
   preservation?: string;
   cleaning_method?: string;
   deposit_nature?: string;
@@ -274,9 +299,11 @@ export function deleteFeature(id: number): boolean {
 function saveChildren(db: ReturnType<typeof getDb>, featureId: number, layers: LayerInput[], artifacts: ArtifactInput[]) {
   const insertLayer = db.prepare(
     `INSERT INTO feature_layers (feature_id, layer_number, soil_color, soil_texture, density, thickness,
-       deposit_shape, inclusions, preservation, cleaning_method, deposit_nature, depth_text, remarks, sort_order)
+       deposit_shape, inclusions, inclusions_json, specimens_json, soil_sample, upper_interface, lower_interface, observation,
+       preservation, cleaning_method, deposit_nature, depth_text, remarks, sort_order)
      VALUES (@feature_id, @layer_number, @soil_color, @soil_texture, @density, @thickness,
-       @deposit_shape, @inclusions, @preservation, @cleaning_method, @deposit_nature, @depth_text, @remarks, @sort_order)`
+       @deposit_shape, @inclusions, @inclusions_json, @specimens_json, @soil_sample, @upper_interface, @lower_interface, @observation,
+       @preservation, @cleaning_method, @deposit_nature, @depth_text, @remarks, @sort_order)`
   );
   layers.forEach((l, i) => {
     insertLayer.run({
@@ -287,7 +314,13 @@ function saveChildren(db: ReturnType<typeof getDb>, featureId: number, layers: L
       density: l.density || '',
       thickness: l.thickness || '',
       deposit_shape: l.deposit_shape || '',
-      inclusions: l.inclusions || '',
+      inclusions: '',
+      inclusions_json: JSON.stringify(l.inclusions || []),
+      specimens_json: JSON.stringify(l.specimens || []),
+      soil_sample: l.soil_sample || '',
+      upper_interface: l.upper_interface || '',
+      lower_interface: l.lower_interface || '',
+      observation: l.observation || '',
       preservation: l.preservation || '',
       cleaning_method: l.cleaning_method || '',
       deposit_nature: l.deposit_nature || '',
@@ -314,10 +347,46 @@ function saveChildren(db: ReturnType<typeof getDb>, featureId: number, layers: L
   });
 }
 
+// 结构化包含物 → 文本（与日记系统生成正文逻辑一致）
+export function composeInclusionsText(inclusions: InclusionRow[]): string {
+  if (!inclusions) return '';
+  return inclusions
+    .filter(inc => inc.type)
+    .map(inc => {
+      const detail = [inc.proportion, inc.particleSize && `粒径${inc.particleSize}cm`, inc.sorting && `分选${inc.sorting}`, inc.roundness]
+        .filter(Boolean).join('，');
+      return detail ? `${inc.type}（${detail}）` : inc.type;
+    })
+    .join('；');
+}
+
+// 结构化标本 → 文本
+export function composeSpecimensText(specimensJson: string): string {
+  if (!specimensJson) return '';
+  try {
+    const arr = JSON.parse(specimensJson) as SpecimenRow[];
+    return arr
+      .filter(s => s.number || s.category)
+      .map(s => s.number ? `${s.number}（${[s.category, s.quantity].filter(Boolean).join('，')}）` : [s.category, s.quantity].filter(Boolean).join('，'))
+      .join('；');
+  } catch { return ''; }
+}
+
+// 层包含物文本：结构化优先，旧文本列 fallback
+export function layerInclusionsText(l: FeatureLayer): string {
+  if (l.inclusions_json) {
+    try {
+      const text = composeInclusionsText(JSON.parse(l.inclusions_json) as InclusionRow[]);
+      if (text) return text;
+    } catch { /* ignore */ }
+  }
+  return l.inclusions || '';
+}
+
 // 由堆积层自动拼接「堆积层与包含物」文本
 export function composeDepositText(layers: FeatureLayer[]): string {
   return layers
-    .filter(l => l.layer_number || l.soil_color || l.inclusions)
+    .filter(l => l.layer_number || l.soil_color || layerInclusionsText(l))
     .map(l => {
       const parts = [`${l.layer_number}层`];
       if (l.soil_color) parts.push(l.soil_color);
@@ -325,9 +394,16 @@ export function composeDepositText(layers: FeatureLayer[]): string {
       if (l.density) parts.push(l.density);
       const base = parts.join('');
       let line = base;
-      if (l.inclusions) line += `，含${l.inclusions}`;
+      const inc = layerInclusionsText(l);
+      if (inc) line += `，含${inc}`;
       if (l.thickness) line += `，厚约${l.thickness}`;
-      if (l.remarks) line += `（${l.remarks}）`;
+      const specimens = composeSpecimensText(l.specimens_json);
+      if (specimens) line += `，标本：${specimens}`;
+      if (l.soil_sample) line += `，土样：${l.soil_sample}`;
+      if (l.upper_interface) line += `，上界面呈${l.upper_interface}`;
+      if (l.lower_interface) line += `，下界面呈${l.lower_interface}`;
+      const extra = [l.observation, l.remarks].filter(Boolean).join('；');
+      if (extra) line += `（${extra}）`;
       return line + '。';
     })
     .join('\n');
