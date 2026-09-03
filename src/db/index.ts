@@ -73,6 +73,7 @@ function seedUsers() {
     { username: 'user8', password: 'user123', role: 'user', display_name: '库管员8' },
     { username: 'user9', password: 'user123', role: 'user', display_name: '库管员9' },
     { username: 'user10', password: 'user123', role: 'user', display_name: '库管员10' },
+    { username: 'user11', password: 'user123', role: 'user', display_name: '库管员11' },
   ];
 
   const stmt = db.prepare(
