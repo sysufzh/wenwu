@@ -23,7 +23,7 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = (await request.json()) as DiaryCreateInput;
-    if (!body.content) {
+    if (!body.content && body.status !== '草稿') {
       return NextResponse.json({ error: '日记内容不能为空' }, { status: 400 });
     }
     const diary = updateDiary(parseInt(id), body);

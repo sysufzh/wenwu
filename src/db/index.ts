@@ -54,6 +54,11 @@ function migrateSchema() {
     "ALTER TABLE feature_layers ADD COLUMN upper_interface TEXT DEFAULT ''",
     "ALTER TABLE feature_layers ADD COLUMN lower_interface TEXT DEFAULT ''",
     "ALTER TABLE feature_layers ADD COLUMN observation TEXT DEFAULT ''",
+    "ALTER TABLE excavation_diaries ADD COLUMN temperature TEXT DEFAULT ''",
+    "ALTER TABLE excavation_diaries ADD COLUMN workers TEXT DEFAULT ''",
+    "ALTER TABLE excavation_diaries ADD COLUMN status TEXT DEFAULT '已保存'",
+    "ALTER TABLE feature_artifacts ADD COLUMN name TEXT DEFAULT ''",
+    "ALTER TABLE feature_artifacts ADD COLUMN description TEXT DEFAULT ''",
   ];
   for (const sql of migrations) {
     try { db.exec(sql); } catch { /* column already exists */ }

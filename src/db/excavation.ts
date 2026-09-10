@@ -73,6 +73,8 @@ export interface FeatureArtifact {
   type: string;
   quantity: string;
   number: string;
+  name: string;
+  description: string;
   remarks: string;
   sort_order: number;
 }
@@ -135,6 +137,8 @@ export interface ArtifactInput {
   type?: string;
   quantity?: string;
   number?: string;
+  name?: string;
+  description?: string;
   remarks?: string;
   sort_order?: number;
 }
@@ -331,8 +335,8 @@ function saveChildren(db: ReturnType<typeof getDb>, featureId: number, layers: L
   });
 
   const insertArtifact = db.prepare(
-    `INSERT INTO feature_artifacts (feature_id, layer_number, type, quantity, number, remarks, sort_order)
-     VALUES (@feature_id, @layer_number, @type, @quantity, @number, @remarks, @sort_order)`
+    `INSERT INTO feature_artifacts (feature_id, layer_number, type, quantity, number, name, description, remarks, sort_order)
+     VALUES (@feature_id, @layer_number, @type, @quantity, @number, @name, @description, @remarks, @sort_order)`
   );
   artifacts.forEach((a, i) => {
     insertArtifact.run({
@@ -341,6 +345,8 @@ function saveChildren(db: ReturnType<typeof getDb>, featureId: number, layers: L
       type: a.type || '',
       quantity: a.quantity || '',
       number: a.number || '',
+      name: a.name || '',
+      description: a.description || '',
       remarks: a.remarks || '',
       sort_order: a.sort_order ?? i,
     });
@@ -412,10 +418,11 @@ export function composeDepositText(layers: FeatureLayer[]): string {
 // 由遗物自动拼接「遗物」文本
 export function composeArtifactText(artifacts: FeatureArtifact[]): string {
   return artifacts
-    .filter(a => a.type || a.number)
+    .filter(a => a.type || a.number || a.name)
     .map(a => {
-      const seg = [a.type, a.quantity].filter(Boolean).join('');
-      return seg ? `${seg}：${a.number}` : a.number;
+      const label = a.name ? `${a.name}（${a.type}）` : [a.type, a.quantity].filter(Boolean).join('');
+      const base = label ? `${label}：${a.number}` : (a.number || '');
+      return a.description ? `${base}（${a.description}）` : base;
     })
     .join('\n');
 }

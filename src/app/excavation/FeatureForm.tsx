@@ -23,7 +23,7 @@ interface RawLayer {
 }
 
 interface ArtifactInput {
-  layer_number: string; type: string; quantity: string; number: string; remarks: string;
+  layer_number: string; type: string; quantity: string; number: string; name: string; description: string; remarks: string;
 }
 
 interface FeatureFormValues {
@@ -47,7 +47,7 @@ const emptyLayer = (): LayerInput => ({
 });
 
 const emptyArtifact = (): ArtifactInput => ({
-  layer_number: '', type: '', quantity: '', number: '', remarks: '',
+  layer_number: '', type: '', quantity: '', number: '', name: '', description: '', remarks: '',
 });
 
 const defaultValues: FeatureFormValues = {
@@ -381,6 +381,8 @@ export default function FeatureForm({ initial, id }: { initial?: FeatureFormValu
               <Field label="类型"><input className={inputCls} value={a.type} onChange={e => setArtifact(i, 'type', e.target.value)} placeholder="陶片" /></Field>
               <Field label="数量"><input className={inputCls} value={a.quantity} onChange={e => setArtifact(i, 'quantity', e.target.value)} placeholder="1袋" /></Field>
               <Field label="编号"><input className={inputCls} value={a.number} onChange={e => setArtifact(i, 'number', e.target.value)} /></Field>
+              <Field label="名称"><input className={inputCls} value={a.name} onChange={e => setArtifact(i, 'name', e.target.value)} placeholder="陶纺轮" /></Field>
+              <Field label="描述"><input className={inputCls} value={a.description} onChange={e => setArtifact(i, 'description', e.target.value)} placeholder="泥质灰陶，绳纹" /></Field>
               <Field label="备注"><input className={inputCls} value={a.remarks} onChange={e => setArtifact(i, 'remarks', e.target.value)} /></Field>
             </div>
           </div>

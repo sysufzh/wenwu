@@ -167,6 +167,9 @@ CREATE TABLE IF NOT EXISTS excavation_diaries (
   recorder TEXT DEFAULT '',
   content TEXT NOT NULL DEFAULT '',
   feature_data TEXT DEFAULT '',
+  temperature TEXT DEFAULT '',
+  workers TEXT DEFAULT '',
+  status TEXT DEFAULT '已保存',
   created_at DATETIME DEFAULT (datetime('now','localtime')),
   updated_at DATETIME DEFAULT (datetime('now','localtime'))
 );
@@ -246,6 +249,8 @@ CREATE TABLE IF NOT EXISTS feature_artifacts (
   type TEXT DEFAULT '',
   quantity TEXT DEFAULT '',
   number TEXT DEFAULT '',
+  name TEXT DEFAULT '',
+  description TEXT DEFAULT '',
   remarks TEXT DEFAULT '',
   sort_order INTEGER DEFAULT 0,
   FOREIGN KEY (feature_id) REFERENCES excavation_features(id) ON DELETE CASCADE

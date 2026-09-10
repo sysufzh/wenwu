@@ -11,6 +11,8 @@ export function buildDiaryDoc(d: ExcavationDiary): Document {
     kvRow('探方号', d.trench_number),
     kvRow('记录人', d.recorder),
   ];
+  if (d.temperature) rows.push(kvRow('温度', d.temperature));
+  if (d.workers) rows.push(kvRow('用工人员', d.workers));
 
   const contentParagraphs: Paragraph[] = (d.content || '')
     .split('\n')

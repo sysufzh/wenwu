@@ -10,6 +10,9 @@ export interface ExcavationDiary {
   recorder: string;
   content: string;
   feature_data: string;
+  temperature: string;
+  workers: string;
+  status: string;
   created_at: string;
   updated_at: string;
 }
@@ -23,6 +26,9 @@ export interface DiaryCreateInput {
   recorder?: string;
   content: string;
   feature_data?: string;
+  temperature?: string;
+  workers?: string;
+  status?: string;
 }
 
 export function getDiaries(params: { page?: number; limit?: number; dateFrom?: string; dateTo?: string; trench_number?: string } = {}) {
@@ -72,8 +78,8 @@ export function createDiary(input: DiaryCreateInput): ExcavationDiary {
   const db = getDb();
   const now = new Date().toISOString();
   const stmt = db.prepare(
-    `INSERT INTO excavation_diaries (diary_date, weather, wind_direction, humidity, trench_number, recorder, content, feature_data, created_at, updated_at)
-     VALUES (@diary_date, @weather, @wind_direction, @humidity, @trench_number, @recorder, @content, @feature_data, @created_at, @updated_at)`
+    `INSERT INTO excavation_diaries (diary_date, weather, wind_direction, humidity, trench_number, recorder, content, feature_data, temperature, workers, status, created_at, updated_at)
+     VALUES (@diary_date, @weather, @wind_direction, @humidity, @trench_number, @recorder, @content, @feature_data, @temperature, @workers, @status, @created_at, @updated_at)`
   );
   const result = stmt.run({
     diary_date: input.diary_date,
@@ -84,6 +90,9 @@ export function createDiary(input: DiaryCreateInput): ExcavationDiary {
     recorder: input.recorder || '',
     content: input.content,
     feature_data: input.feature_data || '',
+    temperature: input.temperature || '',
+    workers: input.workers || '',
+    status: input.status || '已保存',
     created_at: now,
     updated_at: now,
   });
@@ -100,7 +109,8 @@ export function updateDiary(id: number, input: DiaryCreateInput): ExcavationDiar
     `UPDATE excavation_diaries SET
       diary_date = @diary_date, weather = @weather, wind_direction = @wind_direction,
       humidity = @humidity, trench_number = @trench_number, recorder = @recorder,
-      content = @content, updated_at = @updated_at
+      content = @content, feature_data = @feature_data, temperature = @temperature,
+      workers = @workers, status = @status, updated_at = @updated_at
      WHERE id = @id`
   ).run({
     id,
@@ -111,6 +121,10 @@ export function updateDiary(id: number, input: DiaryCreateInput): ExcavationDiar
     trench_number: input.trench_number ?? existing.trench_number,
     recorder: input.recorder ?? existing.recorder,
     content: input.content ?? existing.content,
+    feature_data: input.feature_data ?? existing.feature_data,
+    temperature: input.temperature ?? existing.temperature,
+    workers: input.workers ?? existing.workers,
+    status: input.status ?? existing.status,
     updated_at: now,
   });
   return getDiaryById(id);

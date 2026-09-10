@@ -6,7 +6,9 @@ import { useSearchParams } from 'next/navigation';
 // Types
 interface DiaryRecord {
   id: number; diary_date: string; weather: string; wind_direction: string;
-  humidity: string; trench_number: string; recorder: string; content: string; created_at: string; updated_at: string;
+  humidity: string; trench_number: string; recorder: string; content: string;
+  temperature: string; workers: string; status: string; feature_data: string;
+  created_at: string; updated_at: string;
 }
 
 interface InclusionRow {
@@ -14,7 +16,7 @@ interface InclusionRow {
 }
 
 interface ArtifactRow {
-  type: string; quantity: string; number: string;
+  type: string; quantity: string; number: string; description: string;
 }
 
 interface SpecimenRow {
@@ -22,7 +24,7 @@ interface SpecimenRow {
 }
 
 interface SmallFindRow {
-  number: string; category: string; coordinate: string; location: string;
+  number: string; category: string; coordinate: string; location: string; name: string; description: string;
 }
 
 interface LayerPanel {
@@ -36,6 +38,7 @@ interface LayerPanel {
   corner_depth_ne: string; corner_depth_se: string; corner_depth_sw: string; corner_depth_nw: string;
   layer_completed: string; layer_thickness: string;
   upper_interface_shape: string; lower_interface_shape: string; layer_nature: string;
+  depth_from_surface: string; distribution: string;
   has_small_find: string; small_finds: SmallFindRow[];
 }
 
@@ -74,11 +77,29 @@ interface FeaturePanel {
   has_small_find: string; small_finds: SmallFindRow[];
 }
 
+interface FeatureDataSnapshot {
+  work_type?: 'excavation' | 'rest';
+  has_layer_excavation?: boolean;
+  has_scraping?: boolean;
+  has_feature_excavation?: boolean;
+  layer_panels?: LayerPanel[];
+  scrape_progress?: string;
+  scrape_direction?: string;
+  scrape_observation?: string;
+  scrape_time_start?: string;
+  scrape_time_end?: string;
+  feature_panels?: FeaturePanel[];
+  work_summary?: string;
+  tomorrow_plan?: string;
+  specimen_register?: string;
+  small_finds_register?: string;
+}
+
 // Defaults
 const emptyInclusion = (): InclusionRow => ({ type: '', proportion: '', particleSize: '', sorting: '一般', roundness: '略有棱角的' });
-const emptyArtifact = (): ArtifactRow => ({ type: '', quantity: '', number: '' });
+const emptyArtifact = (): ArtifactRow => ({ type: '', quantity: '', number: '', description: '' });
 const emptySpecimen = (): SpecimenRow => ({ number: '', category: '', quantity: '' });
-const emptySmallFind = (): SmallFindRow => ({ number: '', category: '', coordinate: '', location: '' });
+const emptySmallFind = (): SmallFindRow => ({ number: '', category: '', coordinate: '', location: '', name: '', description: '' });
 
 const emptyLayerPanel = (): LayerPanel => ({
   layer_number: '①', excavate_direction: '', work_progress: '',
@@ -91,6 +112,7 @@ const emptyLayerPanel = (): LayerPanel => ({
   corner_depth_ne: '', corner_depth_se: '', corner_depth_sw: '', corner_depth_nw: '',
   layer_completed: '否', layer_thickness: '',
   upper_interface_shape: '水平状', lower_interface_shape: '水平状', layer_nature: '',
+  depth_from_surface: '', distribution: '全方',
   has_small_find: '否', small_finds: [emptySmallFind()],
 });
 
@@ -126,6 +148,7 @@ const defaultForm = {
   diary_date: today(),
   weather: '晴', wind_direction: '', humidity: '',
   trench_number: '', recorder: '',
+  temperature: '', workers: '', status: '已保存',
   work_type: 'excavation' as 'excavation' | 'rest',
   has_layer_excavation: true, has_scraping: false, has_feature_excavation: false,
   layer_panels: [emptyLayerPanel()],
@@ -135,6 +158,43 @@ const defaultForm = {
   work_summary: '', tomorrow_plan: '',
   specimen_register: '', small_finds_register: '',
 };
+
+const artifactText = (a: ArtifactRow, wrap: boolean) =>
+  wrap
+    ? `${a.type}${a.quantity}（编号${a.number}${a.description ? `，${a.description}` : ''}）`
+    : `${a.type}${a.quantity}，编号${a.number}${a.description ? `（${a.description}）` : ''}`;
+
+const smallFindText = (sf: SmallFindRow) => {
+  const parts = [sf.category, sf.name, sf.description].filter(Boolean);
+  return `小件${sf.number}（${parts.join('，')}，坐标${sf.coordinate}，入库${sf.location}）`;
+};
+
+const normalizeLayerPanel = (lp: LayerPanel): LayerPanel => ({
+  ...emptyLayerPanel(), ...lp,
+  distribution: lp.distribution || '全方',
+  depth_from_surface: lp.depth_from_surface || '',
+  inclusions: (lp.inclusions || []).map(inc => ({ ...emptyInclusion(), ...inc })),
+  artifacts_found: (lp.artifacts_found || []).map(a => ({ ...emptyArtifact(), ...a })),
+  specimens: (lp.specimens || []).map(sp => ({ ...emptySpecimen(), ...sp })),
+  small_finds: (lp.small_finds || []).map(sf => ({ ...emptySmallFind(), ...sf })),
+});
+
+const normalizeFeaturePanel = (fp: FeaturePanel): FeaturePanel => ({
+  ...emptyFeature(), ...fp,
+  half_deposits: (fp.half_deposits || []).map(hd => ({
+    ...emptyHalfDeposit(), ...hd,
+    inclusions: (hd.inclusions || []).map(inc => ({ ...emptyInclusion(), ...inc })),
+    artifacts_found: (hd.artifacts_found || []).map(a => ({ ...emptyArtifact(), ...a })),
+    specimens: (hd.specimens || []).map(sp => ({ ...emptySpecimen(), ...sp })),
+  })),
+  complete_deposits: (fp.complete_deposits || []).map(cd => ({
+    ...emptyCompleteDeposit(), ...cd,
+    inclusions: (cd.inclusions || []).map(inc => ({ ...emptyInclusion(), ...inc })),
+    artifacts_found: (cd.artifacts_found || []).map(a => ({ ...emptyArtifact(), ...a })),
+    specimens: (cd.specimens || []).map(sp => ({ ...emptySpecimen(), ...sp })),
+  })),
+  small_finds: (fp.small_finds || []).map(sf => ({ ...emptySmallFind(), ...sf })),
+});
 
 // ============ Component ============
 export default function DiaryPage() {
@@ -576,7 +636,7 @@ function DiaryContent() {
   const collectSmallFinds = () => {
     const parts: string[] = [];
     const add = (label: string, sf: SmallFindRow) => {
-      parts.push(`${label}小件${sf.number}（${sf.category}，坐标${sf.coordinate}，入库${sf.location}）`);
+      parts.push(`${label}${smallFindText(sf)}`);
     };
     if (form.has_layer_excavation) {
       form.layer_panels.forEach((lp, i) => {
@@ -602,13 +662,19 @@ function DiaryContent() {
     setEditingId(null);
 
     if (form.work_type === 'rest') {
-      setGeneratedText(`${form.diary_date} ${form.weather} 风向${form.wind_direction} 湿度${form.humidity}\n探方：${form.trench_number}\n记录人：${form.recorder}\n\n本日未发掘。`);
+      const meta = `${form.diary_date} ${form.weather} 风向${form.wind_direction} 湿度${form.humidity}${form.temperature ? ` 温度${form.temperature}` : ''}`;
+      const header = [meta, `探方：${form.trench_number}`];
+      if (form.workers) header.push(`用工人员：${form.workers}`);
+      header.push(`记录人：${form.recorder}`, '', '本日未发掘。');
+      setGeneratedText(header.join('\n'));
       return;
     }
 
     const lines: string[] = [];
-    lines.push(`${form.diary_date} ${form.weather} 风向${form.wind_direction} 湿度${form.humidity}`);
+    const meta = `${form.diary_date} ${form.weather} 风向${form.wind_direction} 湿度${form.humidity}${form.temperature ? ` 温度${form.temperature}` : ''}`;
+    lines.push(meta);
     lines.push(`探方：${form.trench_number}`);
+    if (form.workers) lines.push(`用工人员：${form.workers}`);
     if (form.recorder) lines.push(`记录人：${form.recorder}`);
     lines.push('');
 
@@ -632,7 +698,7 @@ function DiaryContent() {
         }
 
         if (lp.artifacts_found.some(a => a.type)) {
-          const artStrs = lp.artifacts_found.filter(a => a.type).map(a => `${a.type}${a.quantity}，编号${a.number}`);
+          const artStrs = lp.artifacts_found.filter(a => a.type).map(a => artifactText(a, false));
           lines.push(`出土物：${artStrs.join('；')}。`);
         }
 
@@ -650,7 +716,8 @@ function DiaryContent() {
 
         if (lp.layer_completed === '是') {
           lines.push(`${lp.layer_number}层已发掘完毕。`);
-          const sumParts = [`${lp.layer_number}层水平分布于全方`];
+          const sumParts = [`${lp.layer_number}层水平分布于${lp.distribution || '全方'}`];
+          if (lp.depth_from_surface) sumParts.push(`距地表${lp.depth_from_surface}`);
           if (lp.layer_thickness) sumParts.push(`厚${lp.layer_thickness}cm`);
           if (soilDesc) sumParts.push(`为${soilDesc}`);
           sumParts.push(`${lp.soil_density}`);
@@ -663,7 +730,7 @@ function DiaryContent() {
           }
           // Artifacts summary
           if (lp.artifacts_found.some(a => a.type)) {
-            const artStrs = lp.artifacts_found.filter(a => a.type).map(a => `${a.type}${a.quantity}（编号${a.number}）`);
+            const artStrs = lp.artifacts_found.filter(a => a.type).map(a => artifactText(a, true));
             sumParts.push(`出土${artStrs.join('、')}`);
           }
           // Specimens summary
@@ -679,9 +746,7 @@ function DiaryContent() {
 
         // Small finds for this layer
         if (lp.has_small_find === '是' && lp.small_finds.some(s => s.number)) {
-          const sfStrs = lp.small_finds.filter(s => s.number).map(s =>
-            `小件${s.number}（${s.category}，坐标${s.coordinate}，入库${s.location}）`
-          );
+          const sfStrs = lp.small_finds.filter(s => s.number).map(s => smallFindText(s));
           lines.push(`采集小件：${sfStrs.join('；')}。`);
         }
 
@@ -731,7 +796,7 @@ function DiaryContent() {
               lines.push(`包含物：${incStrs.join('；')}。`);
             }
             if (cd.artifacts_found.some(a => a.type)) {
-              const artStrs = cd.artifacts_found.filter(a => a.type).map(a => `${a.type}${a.quantity}，编号${a.number}`);
+              const artStrs = cd.artifacts_found.filter(a => a.type).map(a => artifactText(a, false));
               lines.push(`出土物：${artStrs.join('；')}。`);
             }
             if (cd.specimens.some(s => s.number)) {
@@ -763,7 +828,7 @@ function DiaryContent() {
               cdParts.push(`包含${incStrs.join('、')}`);
             }
             if (cd.artifacts_found.some(a => a.type)) {
-              const artStrs = cd.artifacts_found.filter(a => a.type).map(a => `${a.type}${a.quantity}（编号${a.number}）`);
+              const artStrs = cd.artifacts_found.filter(a => a.type).map(a => artifactText(a, true));
               cdParts.push(`出土${artStrs.join('、')}`);
             }
             if (cd.specimens.some(s => s.number)) {
@@ -786,7 +851,7 @@ function DiaryContent() {
               lines.push(`包含物：${incStrs.join('；')}。`);
             }
             if (hd.artifacts_found.some(a => a.type)) {
-              const artStrs = hd.artifacts_found.filter(a => a.type).map(a => `${a.type}${a.quantity}，编号${a.number}`);
+              const artStrs = hd.artifacts_found.filter(a => a.type).map(a => artifactText(a, false));
               lines.push(`出土物：${artStrs.join('；')}。`);
             }
             if (hd.specimens.some(s => s.number)) {
@@ -801,9 +866,7 @@ function DiaryContent() {
 
         // Small finds for this feature
         if (fp.has_small_find === '是' && fp.small_finds.some(s => s.number)) {
-          const sfStrs = fp.small_finds.filter(s => s.number).map(s =>
-            `小件${s.number}（${s.category}，坐标${s.coordinate}，入库${s.location}）`
-          );
+          const sfStrs = fp.small_finds.filter(s => s.number).map(s => smallFindText(s));
           lines.push(`采集小件：${sfStrs.join('；')}。`);
         }
 
@@ -830,24 +893,65 @@ function DiaryContent() {
     setGeneratedText(lines.join('\n'));
   };
 
+  const buildSnapshot = () => ({
+    work_type: form.work_type,
+    has_layer_excavation: form.has_layer_excavation,
+    has_scraping: form.has_scraping,
+    has_feature_excavation: form.has_feature_excavation,
+    layer_panels: form.layer_panels,
+    scrape_progress: form.scrape_progress,
+    scrape_direction: form.scrape_direction,
+    scrape_observation: form.scrape_observation,
+    scrape_time_start: form.scrape_time_start,
+    scrape_time_end: form.scrape_time_end,
+    feature_panels: form.feature_panels,
+    work_summary: form.work_summary,
+    tomorrow_plan: form.tomorrow_plan,
+    specimen_register: form.specimen_register,
+    small_finds_register: form.small_finds_register,
+  });
+
   const handleSave = async () => {
     if (!generatedText) { alert('请先生成日记'); return; }
     setSaving(true);
     const isUpdate = editingId != null;
-    const base = {
+    const payload = {
       diary_date: form.diary_date, weather: form.weather, wind_direction: form.wind_direction,
       humidity: form.humidity, trench_number: form.trench_number, recorder: form.recorder,
+      temperature: form.temperature, workers: form.workers, status: '已保存',
       content: generatedText,
+      feature_data: JSON.stringify(buildSnapshot()),
     };
-    const payload = isUpdate
-      ? base
-      : { ...base, feature_data: JSON.stringify({ feature_panels: form.has_feature_excavation ? form.feature_panels.filter(fp => fp.feature_number) : [] }) };
     const res = await fetch(isUpdate ? `/api/diaries/${editingId}` : '/api/diaries', {
       method: isUpdate ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
-    alert(res.ok ? '保存成功' : (await res.json()).error || '保存失败');
-    if (res.ok) { fetchDiaries(); fetchTrenches(); }
+    if (res.ok) { alert('保存成功'); fetchDiaries(); fetchTrenches(); }
+    else alert((await res.json()).error || '保存失败');
+    setSaving(false);
+  };
+
+  const handleDraft = async () => {
+    setSaving(true);
+    const isUpdate = editingId != null;
+    const payload = {
+      diary_date: form.diary_date, weather: form.weather, wind_direction: form.wind_direction,
+      humidity: form.humidity, trench_number: form.trench_number, recorder: form.recorder,
+      temperature: form.temperature, workers: form.workers, status: '草稿',
+      content: generatedText,
+      feature_data: JSON.stringify(buildSnapshot()),
+    };
+    const res = await fetch(isUpdate ? `/api/diaries/${editingId}` : '/api/diaries', {
+      method: isUpdate ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (!isUpdate && data.id != null) setEditingId(data.id);
+      alert('已暂存'); fetchDiaries(); fetchTrenches();
+    } else {
+      alert((await res.json()).error || '暂存失败');
+    }
     setSaving(false);
   };
 
@@ -888,11 +992,32 @@ function DiaryContent() {
   const handleView = (d: DiaryRecord) => {
     setGeneratedText(d.content);
     setEditingId(d.id);
-    setForm(f => ({
-      ...f,
-      diary_date: d.diary_date, weather: d.weather, wind_direction: d.wind_direction,
-      humidity: d.humidity, trench_number: d.trench_number, recorder: d.recorder,
-    }));
+    setForm(() => {
+      let snap: Partial<FeatureDataSnapshot> = {};
+      try { snap = JSON.parse(d.feature_data || '{}'); } catch { snap = {}; }
+      const restored = {
+        ...defaultForm,
+        diary_date: d.diary_date, weather: d.weather, wind_direction: d.wind_direction,
+        humidity: d.humidity, trench_number: d.trench_number, recorder: d.recorder,
+        temperature: d.temperature || '', workers: d.workers || '', status: d.status || '已保存',
+      };
+      if (snap.work_type === 'rest' || snap.work_type === 'excavation') restored.work_type = snap.work_type;
+      if (typeof snap.has_layer_excavation === 'boolean') restored.has_layer_excavation = snap.has_layer_excavation;
+      if (typeof snap.has_scraping === 'boolean') restored.has_scraping = snap.has_scraping;
+      if (typeof snap.has_feature_excavation === 'boolean') restored.has_feature_excavation = snap.has_feature_excavation;
+      if (Array.isArray(snap.layer_panels) && snap.layer_panels.length) restored.layer_panels = snap.layer_panels.map(normalizeLayerPanel);
+      if (Array.isArray(snap.feature_panels) && snap.feature_panels.length) restored.feature_panels = snap.feature_panels.map(normalizeFeaturePanel);
+      restored.scrape_progress = snap.scrape_progress || restored.scrape_progress;
+      restored.scrape_direction = snap.scrape_direction || '';
+      restored.scrape_observation = snap.scrape_observation || '';
+      restored.scrape_time_start = snap.scrape_time_start || '';
+      restored.scrape_time_end = snap.scrape_time_end || '';
+      restored.work_summary = snap.work_summary || '';
+      restored.tomorrow_plan = snap.tomorrow_plan || '';
+      restored.specimen_register = snap.specimen_register || '';
+      restored.small_finds_register = snap.small_finds_register || '';
+      return restored;
+    });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -928,11 +1053,12 @@ function DiaryContent() {
   );
 
   const renderArtifactRow = (art: ArtifactRow, ri: number, onChange: (ri: number, key: string, val: string) => void, onDel: (ri: number) => void, showDel: boolean) => (
-    <div key={ri} className="grid grid-cols-3 gap-1.5 mb-1.5 items-end">
+    <div key={ri} className="grid grid-cols-4 gap-1.5 mb-1.5 items-end">
       <div><input value={art.type} onChange={e => onChange(ri, 'type', e.target.value)} className={inp} placeholder="种类" /></div>
       <div><input value={art.quantity} onChange={e => onChange(ri, 'quantity', e.target.value)} className={inp} placeholder="数量" /></div>
+      <div><input value={art.number} onChange={e => onChange(ri, 'number', e.target.value)} className={inp} placeholder="编号" /></div>
       <div className="flex gap-1">
-        <input value={art.number} onChange={e => onChange(ri, 'number', e.target.value)} className={inp} placeholder="编号" />
+        <input value={art.description} onChange={e => onChange(ri, 'description', e.target.value)} className={inp} placeholder="描述（陶质/陶色/纹饰）" />
         {showDel && <button type="button" onClick={() => onDel(ri)} className="text-red-500 text-xs shrink-0">✕</button>}
       </div>
     </div>
@@ -950,9 +1076,11 @@ function DiaryContent() {
   );
 
   const renderSmallFindRow = (sf: SmallFindRow, ri: number, onChange: (ri: number, key: string, val: string) => void, onDel: (ri: number) => void, showDel: boolean) => (
-    <div key={ri} className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 mb-1.5 items-end">
+    <div key={ri} className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 mb-1.5 items-end">
       <div><input value={sf.number} onChange={e => onChange(ri, 'number', e.target.value)} className={inp} placeholder="小件编号" /></div>
-      <div><input value={sf.category} onChange={e => onChange(ri, 'category', e.target.value)} className={inp} placeholder="类别" /></div>
+      <div><input value={sf.category} onChange={e => onChange(ri, 'category', e.target.value)} className={inp} placeholder="类别（陶/石）" /></div>
+      <div><input value={sf.name} onChange={e => onChange(ri, 'name', e.target.value)} className={inp} placeholder="名称（陶纺轮）" /></div>
+      <div><input value={sf.description} onChange={e => onChange(ri, 'description', e.target.value)} className={inp} placeholder="描述" /></div>
       <div><input value={sf.coordinate} onChange={e => onChange(ri, 'coordinate', e.target.value)} className={inp} placeholder="出土坐标" /></div>
       <div className="flex gap-1">
         <input value={sf.location} onChange={e => onChange(ri, 'location', e.target.value)} className={inp} placeholder="入库位置" />
@@ -973,6 +1101,8 @@ function DiaryContent() {
           <div><label className={lbl}>天气{req}</label><select value={form.weather} onChange={e => u('weather', e.target.value)} className={inp}>{weatherOpts.map(o => <option key={o}>{o}</option>)}</select></div>
           <div><label className={lbl}>风向{req}</label><input value={form.wind_direction} onChange={e => u('wind_direction', e.target.value)} className={inp} placeholder="北风、东南风" /></div>
           <div><label className={lbl}>湿度{req}</label><input value={form.humidity} onChange={e => u('humidity', e.target.value)} className={inp} placeholder="65%" /></div>
+          <div><label className={lbl}>温度</label><input value={form.temperature} onChange={e => u('temperature', e.target.value)} className={inp} placeholder="28℃" /></div>
+          <div><label className={lbl}>用工人员</label><input value={form.workers} onChange={e => u('workers', e.target.value)} className={inp} placeholder="张三、李四" /></div>
           <div><label className={lbl}>探方编号{req}</label><input value={form.trench_number} onChange={e => u('trench_number', e.target.value)} className={inp} placeholder="T0101" /></div>
           <div><label className={lbl}>记录人{req}</label><input value={form.recorder} onChange={e => u('recorder', e.target.value)} className={inp} /></div>
         </div>
@@ -1050,8 +1180,8 @@ function DiaryContent() {
                         <label className={lbl}>出土物{req}</label>
                         <button type="button" onClick={() => addLayerArt(pi)} className="text-xs text-amber-700 hover:text-amber-800">+ 添加出土物</button>
                       </div>
-                      <div className="grid grid-cols-3 gap-1.5 mb-1 text-xs text-stone-400 px-1">
-                        <span>种类</span><span>数量</span><span>编号</span>
+                      <div className="grid grid-cols-4 gap-1.5 mb-1 text-xs text-stone-400 px-1">
+                        <span>种类</span><span>数量</span><span>编号</span><span>描述</span>
                       </div>
                       {lp.artifacts_found.map((art, ri) => renderArtifactRow(art, ri, (ri, k, v) => ulArt(pi, ri, k, v), (ri) => delLayerArt(pi, ri), lp.artifacts_found.length > 1))}
                     </div>
@@ -1084,6 +1214,11 @@ function DiaryContent() {
                       </div>
                     </div>
 
+                    <div className="grid grid-cols-2 gap-3">
+                      <div><label className={lbl}>距地表深度</label><input value={lp.depth_from_surface} onChange={e => ul(pi, 'depth_from_surface', e.target.value)} className={inp} placeholder="20~40cm" /></div>
+                      <div><label className={lbl}>分布范围</label><input value={lp.distribution} onChange={e => ul(pi, 'distribution', e.target.value)} className={inp} placeholder="全方" /></div>
+                    </div>
+
                     <div>
                       <label className={lbl}>该层是否已发掘完毕{req}</label>
                       <select value={lp.layer_completed} onChange={e => ul(pi, 'layer_completed', e.target.value)} className={`${inp} w-24`}><option>否</option><option>是</option></select>
@@ -1107,8 +1242,8 @@ function DiaryContent() {
                             <label className={lbl}>小件登记{req}</label>
                             <button type="button" onClick={() => addLayerSF(pi)} className="text-xs text-amber-700 hover:text-amber-800">+ 添加小件</button>
                           </div>
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 mb-1 text-xs text-stone-400 px-1">
-                            <span>小件编号</span><span>类别</span><span>出土坐标</span><span>入库位置</span>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 mb-1 text-xs text-stone-400 px-1">
+                            <span>小件编号</span><span>类别</span><span>名称</span><span>描述</span><span>出土坐标</span><span>入库位置</span>
                           </div>
                           {lp.small_finds.map((sf, ri) => renderSmallFindRow(sf, ri, (ri, k, v) => ulSF(pi, ri, k, v), (ri) => delLayerSF(pi, ri), lp.small_finds.length > 1))}
                         </div>
@@ -1199,8 +1334,8 @@ function DiaryContent() {
                                   <span className="text-xs font-medium text-stone-600">出土物{req}</span>
                                   <button type="button" onClick={() => addHdArt(fi, di)} className="text-xs text-amber-700">+ 添加</button>
                                 </div>
-                                <div className="grid grid-cols-3 gap-1.5 mb-1 text-xs text-stone-400 px-1">
-                                  <span>种类</span><span>数量</span><span>编号</span>
+                                <div className="grid grid-cols-4 gap-1.5 mb-1 text-xs text-stone-400 px-1">
+                                  <span>种类</span><span>数量</span><span>编号</span><span>描述</span>
                                 </div>
                                 {hd.artifacts_found.map((art, ri) => renderArtifactRow(art, ri, (ri, k, v) => uhdArt(fi, di, ri, k, v), (ri) => delHdArt(fi, di, ri), hd.artifacts_found.length > 1))}
                               </div>
@@ -1278,8 +1413,8 @@ function DiaryContent() {
                                   <span className="text-xs font-medium text-stone-600">出土物{req}</span>
                                   <button type="button" onClick={() => addCdArt(fi, di)} className="text-xs text-amber-700">+ 添加</button>
                                 </div>
-                                <div className="grid grid-cols-3 gap-1.5 mb-1 text-xs text-stone-400 px-1">
-                                  <span>种类</span><span>数量</span><span>编号</span>
+                                <div className="grid grid-cols-4 gap-1.5 mb-1 text-xs text-stone-400 px-1">
+                                  <span>种类</span><span>数量</span><span>编号</span><span>描述</span>
                                 </div>
                                 {cd.artifacts_found.map((art, ri) => renderArtifactRow(art, ri, (ri, k, v) => ucdArt(fi, di, ri, k, v), (ri) => delCdArt(fi, di, ri), cd.artifacts_found.length > 1))}
                               </div>
@@ -1334,8 +1469,8 @@ function DiaryContent() {
                             <label className={lbl}>小件登记{req}</label>
                             <button type="button" onClick={() => addFeatSF(fi)} className="text-xs text-amber-700 hover:text-amber-800">+ 添加小件</button>
                           </div>
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 mb-1 text-xs text-stone-400 px-1">
-                            <span>小件编号</span><span>类别</span><span>出土坐标</span><span>入库位置</span>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 mb-1 text-xs text-stone-400 px-1">
+                            <span>小件编号</span><span>类别</span><span>名称</span><span>描述</span><span>出土坐标</span><span>入库位置</span>
                           </div>
                           {fp.small_finds.map((sf, ri) => renderSmallFindRow(sf, ri, (ri, k, v) => ufSF(fi, ri, k, v), (ri) => delFeatSF(fi, ri), fp.small_finds.length > 1))}
                         </div>
@@ -1363,6 +1498,7 @@ function DiaryContent() {
       {/* Generate */}
       <div className="flex gap-2 justify-center">
         <button type="button" onClick={generateDiary} className="bg-amber-700 text-white px-8 py-2.5 rounded-lg text-sm font-medium hover:bg-amber-800 transition-colors">生成日记</button>
+        <button type="button" onClick={handleDraft} disabled={saving} className="px-6 py-2.5 rounded-lg text-sm font-medium border border-stone-300 text-stone-600 hover:bg-stone-100 disabled:opacity-50">{saving ? '暂存中…' : '暂存'}</button>
       </div>
 
       {/* Preview */}
@@ -1401,8 +1537,8 @@ function DiaryContent() {
                 {diaries.map(d => (
                   <div key={d.id} className="px-5 py-3 hover:bg-stone-50 flex items-center justify-between">
                     <div className="min-w-0 flex-1">
-                      <div className="text-sm font-medium text-stone-800 truncate">{d.diary_date} {d.weather}{d.trench_number && ` · ${d.trench_number}`}</div>
-                      <div className="text-xs text-stone-500 mt-0.5 truncate">{d.content.slice(0, 100)}…</div>
+                      <div className="text-sm font-medium text-stone-800 truncate">{d.diary_date} {d.weather}{d.trench_number && ` · ${d.trench_number}`}{d.status === '草稿' && <span className="ml-2 text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5">草稿</span>}</div>
+                      <div className="text-xs text-stone-500 mt-0.5 truncate">{d.content ? `${d.content.slice(0, 100)}…` : '（草稿，暂无内容）'}</div>
                       <div className="text-xs text-stone-400 mt-0.5">修改：{fmtTime(d.updated_at)}</div>
                     </div>
                     <div className="flex gap-1 ml-3 shrink-0 items-center"><button onClick={() => handleView(d)} className="text-xs px-2 py-1 rounded bg-stone-100 text-stone-600 hover:bg-stone-200">查看</button><a href={`/api/diaries/${d.id}/doc`} className="text-xs px-2 py-1 rounded bg-stone-100 text-stone-600 hover:bg-stone-200">下载</a>{isAdmin && <button onClick={() => handleDelete(d.id)} className="text-xs px-2 py-1 rounded bg-red-50 text-red-600 hover:bg-red-100">删除</button>}</div>

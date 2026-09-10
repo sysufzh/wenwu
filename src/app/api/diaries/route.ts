@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    if (!body.content) {
+    if (!body.content && body.status !== '草稿') {
       return NextResponse.json({ error: '日记内容不能为空' }, { status: 400 });
     }
     const diary = createDiary(body);

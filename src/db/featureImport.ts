@@ -2,8 +2,8 @@ import { getDiariesByFeatureNumber } from './diaries';
 import { FeatureInput, LayerInput, ArtifactInput, InclusionRow, SpecimenRow } from './excavation';
 
 // —— 日记侧结构化数据形状（与 src/app/diary/page.tsx 的 FeaturePanel 对应）——
-interface ArtifactRow { type?: string; quantity?: string; number?: string; }
-interface SmallFindRow { number?: string; category?: string; coordinate?: string; location?: string; }
+interface ArtifactRow { type?: string; quantity?: string; number?: string; description?: string; }
+interface SmallFindRow { number?: string; category?: string; coordinate?: string; location?: string; name?: string; description?: string; }
 
 interface Deposit {
   layer?: string;
@@ -108,7 +108,7 @@ function depositArtifacts(layerNumber: string, artifacts: ArtifactRow[] | undefi
   if (!artifacts) return [];
   return artifacts
     .filter(a => a.type || a.number)
-    .map(a => ({ layer_number: layerNumber, type: a.type || '', quantity: a.quantity || '', number: a.number || '', remarks: '' }));
+    .map(a => ({ layer_number: layerNumber, type: a.type || '', quantity: a.quantity || '', number: a.number || '', description: a.description || '', remarks: '' }));
 }
 
 function draftProcess(featureNumber: string, diaries: DiaryWithPanels[]): string {
@@ -180,9 +180,11 @@ export function importFeatureFromDiaries(featureNumber: string): ImportedFeature
         if (!s.number) continue;
         artifacts.push({
           layer_number: '',
-          type: s.category || '小件',
+          type: s.category || s.name || '小件',
           quantity: '',
           number: s.number,
+          name: s.name || '',
+          description: s.description || '',
           remarks: [s.coordinate && `坐标${s.coordinate}`, s.location && `入库${s.location}`].filter(Boolean).join('，'),
         });
       }
