@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 // Types
@@ -196,6 +196,27 @@ const normalizeFeaturePanel = (fp: FeaturePanel): FeaturePanel => ({
   small_finds: (fp.small_finds || []).map(sf => ({ ...emptySmallFind(), ...sf })),
 });
 
+const DRAFT_KEY = 'wenwu_diary_draft';
+
+const clearDraft = () => {
+  try { window.localStorage.removeItem(DRAFT_KEY); } catch {}
+};
+
+const loadDraft = (): typeof defaultForm | null => {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.localStorage.getItem(DRAFT_KEY);
+    if (!raw) return null;
+    const d = JSON.parse(raw) as Partial<typeof defaultForm>;
+    const merged = { ...defaultForm, ...d } as typeof defaultForm;
+    merged.layer_panels = Array.isArray(d.layer_panels) && d.layer_panels.length ? d.layer_panels.map(normalizeLayerPanel) : defaultForm.layer_panels;
+    merged.feature_panels = Array.isArray(d.feature_panels) && d.feature_panels.length ? d.feature_panels.map(normalizeFeaturePanel) : defaultForm.feature_panels;
+    return merged;
+  } catch {
+    return null;
+  }
+};
+
 // ============ Component ============
 export default function DiaryPage() {
   return (
@@ -207,7 +228,7 @@ export default function DiaryPage() {
 
 function DiaryContent() {
   const searchParams = useSearchParams();
-  const [form, setForm] = useState(defaultForm);
+  const [form, setForm] = useState<typeof defaultForm>(() => loadDraft() || defaultForm);
   const [generatedText, setGeneratedText] = useState('');
   const [saving, setSaving] = useState(false);
   const [copyMsg, setCopyMsg] = useState('');
@@ -221,6 +242,19 @@ function DiaryContent() {
   const [trenches, setTrenches] = useState<string[]>([]);
   const [activeTrench, setActiveTrench] = useState('');
   const [isAdmin, setIsAdmin] = useState(false);
+
+  const cacheTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const skipCacheRef = useRef(false);
+
+  // 边写边缓存（防抖 400ms）
+  useEffect(() => {
+    if (skipCacheRef.current) { skipCacheRef.current = false; return; }
+    if (cacheTimer.current) clearTimeout(cacheTimer.current);
+    cacheTimer.current = setTimeout(() => {
+      try { window.localStorage.setItem(DRAFT_KEY, JSON.stringify(form)); } catch {}
+    }, 400);
+    return () => { if (cacheTimer.current) clearTimeout(cacheTimer.current); };
+  }, [form]);
 
   const u = (key: string, value: unknown) => setForm(f => ({ ...f, [key]: value }));
 
@@ -911,6 +945,14 @@ function DiaryContent() {
     small_finds_register: form.small_finds_register,
   });
 
+  const resetForm = () => {
+    setForm({ ...defaultForm, diary_date: today() });
+    setGeneratedText('');
+    setEditingId(null);
+    clearDraft();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleSave = async () => {
     if (!generatedText) { alert('请先生成日记'); return; }
     setSaving(true);
@@ -926,8 +968,13 @@ function DiaryContent() {
       method: isUpdate ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
-    if (res.ok) { alert('保存成功'); fetchDiaries(); fetchTrenches(); }
-    else alert((await res.json()).error || '保存失败');
+    if (res.ok) {
+      clearDraft();
+      fetchDiaries(); fetchTrenches();
+      if (confirm('保存成功！是否继续填写下一个日记？')) resetForm();
+    } else {
+      alert((await res.json()).error || '保存失败');
+    }
     setSaving(false);
   };
 
@@ -990,6 +1037,7 @@ function DiaryContent() {
     }
   };
   const handleView = (d: DiaryRecord) => {
+    skipCacheRef.current = true;
     setGeneratedText(d.content);
     setEditingId(d.id);
     setForm(() => {
@@ -1499,6 +1547,7 @@ function DiaryContent() {
       <div className="flex gap-2 justify-center">
         <button type="button" onClick={generateDiary} className="bg-amber-700 text-white px-8 py-2.5 rounded-lg text-sm font-medium hover:bg-amber-800 transition-colors">生成日记</button>
         <button type="button" onClick={handleDraft} disabled={saving} className="px-6 py-2.5 rounded-lg text-sm font-medium border border-stone-300 text-stone-600 hover:bg-stone-100 disabled:opacity-50">{saving ? '暂存中…' : '暂存'}</button>
+        <button type="button" onClick={() => { if (confirm('新建将清空当前表单，是否继续？')) resetForm(); }} className="px-6 py-2.5 rounded-lg text-sm font-medium border border-stone-300 text-stone-600 hover:bg-stone-100">新建</button>
       </div>
 
       {/* Preview */}
