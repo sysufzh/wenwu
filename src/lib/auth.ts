@@ -16,7 +16,7 @@ export async function createToken(payload: JWTPayload): Promise<string> {
   return new SignJWT({ ...payload })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
-    .setExpirationTime('24h')
+    .setExpirationTime('7d')
     .sign(JWT_SECRET);
 }
 
@@ -43,7 +43,7 @@ export async function getSessionFromRequest(request: NextRequest): Promise<JWTPa
 }
 
 export function createSessionCookie(token: string): string {
-  return `${COOKIE_NAME}=${token}; HttpOnly; Path=/; Max-Age=86400; SameSite=Lax`;
+  return `${COOKIE_NAME}=${token}; HttpOnly; Path=/; Max-Age=604800; SameSite=Lax`;
 }
 
 export function clearSessionCookie(): string {
