@@ -38,7 +38,7 @@ interface LayerPanel {
   corner_depth_ne: string; corner_depth_se: string; corner_depth_sw: string; corner_depth_nw: string;
   layer_completed: string; layer_thickness: string;
   upper_interface_shape: string; lower_interface_shape: string; layer_nature: string;
-  depth_from_surface: string; distribution: string;
+  depth_from_surface: string; distribution: string; excavate_depth: string;
   has_small_find: string; small_finds: SmallFindRow[];
 }
 
@@ -112,7 +112,7 @@ const emptyLayerPanel = (): LayerPanel => ({
   corner_depth_ne: '', corner_depth_se: '', corner_depth_sw: '', corner_depth_nw: '',
   layer_completed: '否', layer_thickness: '',
   upper_interface_shape: '水平状', lower_interface_shape: '水平状', layer_nature: '',
-  depth_from_surface: '', distribution: '全方',
+  depth_from_surface: '', distribution: '全方', excavate_depth: '',
   has_small_find: '否', small_finds: [emptySmallFind()],
 });
 
@@ -173,6 +173,7 @@ const normalizeLayerPanel = (lp: LayerPanel): LayerPanel => ({
   ...emptyLayerPanel(), ...lp,
   distribution: lp.distribution || '全方',
   depth_from_surface: lp.depth_from_surface || '',
+  excavate_depth: lp.excavate_depth || '',
   inclusions: (lp.inclusions || []).map(inc => ({ ...emptyInclusion(), ...inc })),
   artifacts_found: (lp.artifacts_found || []).map(a => ({ ...emptyArtifact(), ...a })),
   specimens: (lp.specimens || []).map(sp => ({ ...emptySpecimen(), ...sp })),
@@ -747,6 +748,7 @@ function DiaryContent() {
 
         const corners = [lp.corner_depth_ne && `东北${lp.corner_depth_ne}cm`, lp.corner_depth_se && `东南${lp.corner_depth_se}cm`, lp.corner_depth_sw && `西南${lp.corner_depth_sw}cm`, lp.corner_depth_nw && `西北${lp.corner_depth_nw}cm`].filter(Boolean).join('，');
         if (corners) lines.push(`四角发掘深度：${corners}。`);
+        if (lp.excavate_depth) lines.push(`当日发掘深度：${lp.excavate_depth}。`);
 
         if (lp.layer_completed === '是') {
           lines.push(`${lp.layer_number}层已发掘完毕。`);
@@ -1101,14 +1103,16 @@ function DiaryContent() {
   );
 
   const renderArtifactRow = (art: ArtifactRow, ri: number, onChange: (ri: number, key: string, val: string) => void, onDel: (ri: number) => void, showDel: boolean) => (
-    <div key={ri} className="grid grid-cols-4 gap-1.5 mb-1.5 items-end">
-      <div><input value={art.type} onChange={e => onChange(ri, 'type', e.target.value)} className={inp} placeholder="种类" /></div>
-      <div><input value={art.quantity} onChange={e => onChange(ri, 'quantity', e.target.value)} className={inp} placeholder="数量" /></div>
-      <div><input value={art.number} onChange={e => onChange(ri, 'number', e.target.value)} className={inp} placeholder="编号" /></div>
-      <div className="flex gap-1">
-        <input value={art.description} onChange={e => onChange(ri, 'description', e.target.value)} className={inp} placeholder="描述（陶质/陶色/纹饰）" />
-        {showDel && <button type="button" onClick={() => onDel(ri)} className="text-red-500 text-xs shrink-0">✕</button>}
+    <div key={ri} className="mb-2">
+      <div className="grid grid-cols-3 gap-1.5 mb-1.5 items-end">
+        <div><input value={art.type} onChange={e => onChange(ri, 'type', e.target.value)} className={inp} placeholder="种类" /></div>
+        <div><input value={art.quantity} onChange={e => onChange(ri, 'quantity', e.target.value)} className={inp} placeholder="数量" /></div>
+        <div className="flex gap-1">
+          <input value={art.number} onChange={e => onChange(ri, 'number', e.target.value)} className={inp} placeholder="编号" />
+          {showDel && <button type="button" onClick={() => onDel(ri)} className="text-red-500 text-xs shrink-0">✕</button>}
+        </div>
       </div>
+      <input value={art.description} onChange={e => onChange(ri, 'description', e.target.value)} className={inp} placeholder="描述（陶质/陶色/纹饰）" />
     </div>
   );
 
@@ -1124,16 +1128,18 @@ function DiaryContent() {
   );
 
   const renderSmallFindRow = (sf: SmallFindRow, ri: number, onChange: (ri: number, key: string, val: string) => void, onDel: (ri: number) => void, showDel: boolean) => (
-    <div key={ri} className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 mb-1.5 items-end">
-      <div><input value={sf.number} onChange={e => onChange(ri, 'number', e.target.value)} className={inp} placeholder="小件编号" /></div>
-      <div><input value={sf.category} onChange={e => onChange(ri, 'category', e.target.value)} className={inp} placeholder="类别（陶/石）" /></div>
-      <div><input value={sf.name} onChange={e => onChange(ri, 'name', e.target.value)} className={inp} placeholder="名称（陶纺轮）" /></div>
-      <div><input value={sf.description} onChange={e => onChange(ri, 'description', e.target.value)} className={inp} placeholder="描述" /></div>
-      <div><input value={sf.coordinate} onChange={e => onChange(ri, 'coordinate', e.target.value)} className={inp} placeholder="出土坐标" /></div>
-      <div className="flex gap-1">
-        <input value={sf.location} onChange={e => onChange(ri, 'location', e.target.value)} className={inp} placeholder="入库位置" />
-        {showDel && <button type="button" onClick={() => onDel(ri)} className="text-red-500 text-xs shrink-0">✕</button>}
+    <div key={ri} className="mb-2">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 mb-1.5 items-end">
+        <div><input value={sf.number} onChange={e => onChange(ri, 'number', e.target.value)} className={inp} placeholder="小件编号" /></div>
+        <div><input value={sf.category} onChange={e => onChange(ri, 'category', e.target.value)} className={inp} placeholder="类别（陶/石）" /></div>
+        <div><input value={sf.name} onChange={e => onChange(ri, 'name', e.target.value)} className={inp} placeholder="名称（陶纺轮）" /></div>
+        <div><input value={sf.coordinate} onChange={e => onChange(ri, 'coordinate', e.target.value)} className={inp} placeholder="出土坐标" /></div>
+        <div className="flex gap-1">
+          <input value={sf.location} onChange={e => onChange(ri, 'location', e.target.value)} className={inp} placeholder="入库位置" />
+          {showDel && <button type="button" onClick={() => onDel(ri)} className="text-red-500 text-xs shrink-0">✕</button>}
+        </div>
       </div>
+      <input value={sf.description} onChange={e => onChange(ri, 'description', e.target.value)} className={inp} placeholder="描述（形制/纹饰/保存状况）" />
     </div>
   );
 
@@ -1262,7 +1268,8 @@ function DiaryContent() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-3 gap-3">
+                      <div><label className={lbl}>当日发掘深度</label><input value={lp.excavate_depth} onChange={e => ul(pi, 'excavate_depth', e.target.value)} className={inp} placeholder="本次下挖深度，如 20cm" /></div>
                       <div><label className={lbl}>距地表深度</label><input value={lp.depth_from_surface} onChange={e => ul(pi, 'depth_from_surface', e.target.value)} className={inp} placeholder="20~40cm" /></div>
                       <div><label className={lbl}>分布范围</label><input value={lp.distribution} onChange={e => ul(pi, 'distribution', e.target.value)} className={inp} placeholder="全方" /></div>
                     </div>
@@ -1291,7 +1298,7 @@ function DiaryContent() {
                             <button type="button" onClick={() => addLayerSF(pi)} className="text-xs text-amber-700 hover:text-amber-800">+ 添加小件</button>
                           </div>
                           <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 mb-1 text-xs text-stone-400 px-1">
-                            <span>小件编号</span><span>类别</span><span>名称</span><span>描述</span><span>出土坐标</span><span>入库位置</span>
+                            <span>小件编号</span><span>类别</span><span>名称</span><span>出土坐标</span><span>入库位置</span>
                           </div>
                           {lp.small_finds.map((sf, ri) => renderSmallFindRow(sf, ri, (ri, k, v) => ulSF(pi, ri, k, v), (ri) => delLayerSF(pi, ri), lp.small_finds.length > 1))}
                         </div>
@@ -1518,7 +1525,7 @@ function DiaryContent() {
                             <button type="button" onClick={() => addFeatSF(fi)} className="text-xs text-amber-700 hover:text-amber-800">+ 添加小件</button>
                           </div>
                           <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 mb-1 text-xs text-stone-400 px-1">
-                            <span>小件编号</span><span>类别</span><span>名称</span><span>描述</span><span>出土坐标</span><span>入库位置</span>
+                            <span>小件编号</span><span>类别</span><span>名称</span><span>出土坐标</span><span>入库位置</span>
                           </div>
                           {fp.small_finds.map((sf, ri) => renderSmallFindRow(sf, ri, (ri, k, v) => ufSF(fi, ri, k, v), (ri) => delFeatSF(fi, ri), fp.small_finds.length > 1))}
                         </div>
