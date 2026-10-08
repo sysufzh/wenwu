@@ -48,9 +48,19 @@ function VehiclesContent() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
+  const [years, setYears] = useState<string[]>([]);
+  const [exportYear, setExportYear] = useState('');
 
   useEffect(() => {
     fetch('/api/auth/me').then(r => r.json()).then(d => { if (d.role === 'admin') setIsAdmin(true); });
+  }, []);
+
+  useEffect(() => {
+    fetch('/api/vehicles/years').then(r => r.json()).then(d => {
+      const list = d.data || [];
+      setYears(list);
+      if (list.length) setExportYear(list[0]);
+    });
   }, []);
 
   const fetchRecords = useCallback(async () => {
@@ -74,6 +84,11 @@ function VehiclesContent() {
     if (!confirm('确定删除？')) return;
     await fetch(`/api/vehicles/${id}`, { method: 'DELETE' });
     fetchRecords();
+  };
+
+  const handleExport = () => {
+    if (!exportYear) { alert('暂无可用年份'); return; }
+    window.location.href = `/api/vehicles/export?year=${exportYear}`;
   };
 
   const handleEdit = (r: VehicleUsage) => {
@@ -165,6 +180,14 @@ function VehiclesContent() {
         <input type="text" placeholder="搜索车牌号、使用人、事项…" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} className="flex-1 px-3 py-2 border rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-500" />
         <input type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setPage(1); }} className="px-3 py-2 border rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-500" />
         <input type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setPage(1); }} className="px-3 py-2 border rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-500" />
+      </div>
+
+      <div className="flex items-center gap-2">
+        <span className="text-sm text-stone-600">导出记录</span>
+        <select value={exportYear} onChange={e => setExportYear(e.target.value)} className="px-3 py-2 border rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-500">
+          {years.map(y => <option key={y} value={y}>{y}年</option>)}
+        </select>
+        <button onClick={handleExport} className="bg-amber-700 text-white px-4 py-2 rounded-lg text-sm hover:bg-amber-800 transition-colors">导出 Excel</button>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden">

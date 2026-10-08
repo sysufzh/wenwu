@@ -108,3 +108,18 @@ export function deleteVehicleUsage(id: number): boolean {
   const db = getDb();
   return db.prepare('DELETE FROM vehicle_usage WHERE id = ?').run(id).changes > 0;
 }
+
+export function getVehicleUsageYears(): string[] {
+  const db = getDb();
+  const rows = db.prepare(
+    `SELECT DISTINCT substr(usage_date, 1, 4) AS year FROM vehicle_usage WHERE usage_date != '' ORDER BY year DESC`
+  ).all() as { year: string }[];
+  return rows.map(r => r.year).filter(Boolean);
+}
+
+export function getVehicleUsagesByYear(year: string): VehicleUsage[] {
+  const db = getDb();
+  return db.prepare(
+    `SELECT * FROM vehicle_usage WHERE substr(usage_date, 1, 4) = ? ORDER BY usage_date ASC, usage_time_start ASC`
+  ).all(year) as VehicleUsage[];
+}
