@@ -76,7 +76,6 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         return NextResponse.json(r);
       }
       default: {
-        if (!isAdmin) return forbid();
         const r = updateNumberingRequest(nid, body);
         if (!r) return NextResponse.json({ error: '无法编辑该记录' }, { status: 400 });
         return NextResponse.json(r);

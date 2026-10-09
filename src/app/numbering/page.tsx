@@ -330,7 +330,7 @@ function NumberingContent() {
                           {numbered && (
                             <button onClick={() => transition(r.id, 'cancel-apply')} className={btn('bg-orange-50 text-orange-700 hover:bg-orange-100')}>申请销号</button>
                           )}
-                          {numbered && isAdmin && (
+                          {numbered && (
                             <button onClick={() => handleEdit(r)} className={btn('bg-stone-100 text-stone-700 hover:bg-stone-200')}>编辑</button>
                           )}
                           {r.status === '待销号' && isAdmin && (
