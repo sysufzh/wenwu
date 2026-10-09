@@ -138,6 +138,17 @@ export default function HomePage() {
               <div className="text-sm text-stone-500 mt-0.5">牛头山遗址遗迹发掘资料录入，生成发掘记录及登记表 Word</div>
             </div>
           </Link>
+
+          <Link
+            href="/numbering"
+            className="flex items-center gap-5 bg-white rounded-xl shadow-sm border border-stone-200 p-6 hover:border-amber-400 hover:shadow-md transition-all"
+          >
+            <div className="text-4xl">🔢</div>
+            <div>
+              <div className="text-lg font-bold text-stone-800">田野考古给号系统</div>
+              <div className="text-sm text-stone-500 mt-0.5">遗迹编号申请、审批与流水号分配</div>
+            </div>
+          </Link>
         </div>
 
         {/* Admin backup button */}

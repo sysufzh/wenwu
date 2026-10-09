@@ -258,3 +258,30 @@ CREATE TABLE IF NOT EXISTS feature_artifacts (
 
 CREATE INDEX IF NOT EXISTS idx_feature_layers_feature_id ON feature_layers(feature_id);
 CREATE INDEX IF NOT EXISTS idx_feature_artifacts_feature_id ON feature_artifacts(feature_id);
+
+-- 田野考古给号系统
+CREATE TABLE IF NOT EXISTS numbering_requests (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  category TEXT NOT NULL DEFAULT '',
+  trench_number TEXT DEFAULT '',
+  position TEXT DEFAULT '',
+  shape TEXT DEFAULT '',
+  opening_size TEXT DEFAULT '',
+  soil_texture TEXT DEFAULT '',
+  soil_color TEXT DEFAULT '',
+  inclusions TEXT DEFAULT '',
+  stratigraphy TEXT DEFAULT '',
+  remarks TEXT DEFAULT '',
+  applicant TEXT DEFAULT '',
+  apply_date TEXT DEFAULT '',
+  status TEXT DEFAULT '待审批' CHECK(status IN ('待审批','已通过','已驳回')),
+  assigned_number TEXT DEFAULT '',
+  reviewer TEXT DEFAULT '',
+  review_date TEXT DEFAULT '',
+  reject_reason TEXT DEFAULT '',
+  created_at DATETIME DEFAULT (datetime('now','localtime')),
+  updated_at DATETIME DEFAULT (datetime('now','localtime'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_numbering_requests_status ON numbering_requests(status);
+CREATE INDEX IF NOT EXISTS idx_numbering_requests_category ON numbering_requests(category);

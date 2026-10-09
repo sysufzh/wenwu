@@ -82,6 +82,16 @@ const diaryConfig: SubSystemConfig = {
   backLabel: '返回主页',
 };
 
+const numberingConfig: SubSystemConfig = {
+  title: '田野考古给号系统',
+  subtitle: '中国社会科学院考古研究所东南工作队',
+  navItems: [
+    { href: '/numbering', label: '给号申请', icon: '🔢' },
+  ],
+  backHref: '/',
+  backLabel: '返回主页',
+};
+
 const excavationConfig: SubSystemConfig = {
   title: '田野考古发掘系统',
   subtitle: '牛头山遗址',
@@ -127,6 +137,10 @@ function getConfig(pathname: string): SubSystemConfig | undefined {
 
   if (pathname.startsWith('/diary')) {
     return diaryConfig;
+  }
+
+  if (pathname.startsWith('/numbering')) {
+    return numberingConfig;
   }
 
   if (pathname.startsWith('/excavation')) {
