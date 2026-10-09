@@ -19,7 +19,7 @@ interface NumberingRequest {
   remarks: string;
   applicant: string;
   apply_date: string;
-  status: '待审批' | '已通过' | '已驳回';
+  status: '待审批' | '已通过' | '已驳回' | '占号' | '待销号' | '已销号';
   assigned_number: string;
   reviewer: string;
   review_date: string;
@@ -51,6 +51,9 @@ const statusBadge: Record<string, string> = {
   '待审批': 'bg-amber-50 text-amber-700',
   '已通过': 'bg-green-50 text-green-700',
   '已驳回': 'bg-red-50 text-red-700',
+  '占号': 'bg-blue-50 text-blue-700',
+  '待销号': 'bg-orange-50 text-orange-700',
+  '已销号': 'bg-stone-100 text-stone-500',
 };
 
 function NumberingContent() {
@@ -64,6 +67,7 @@ function NumberingContent() {
   const [loading, setLoading] = useState(true);
 
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
 
@@ -93,43 +97,74 @@ function NumberingContent() {
 
   useEffect(() => { fetchRecords(); }, [fetchRecords]);
 
+  const transition = async (id: number, action: string, extra?: Record<string, unknown>) => {
+    const res = await fetch(`/api/numbering/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, ...extra }),
+    });
+    if (res.ok) fetchRecords();
+    else alert((await res.json()).error || '操作失败');
+  };
+
+  const handleOpenNew = () => {
+    setEditingId(null);
+    setForm(emptyForm);
+    setShowForm(true);
+  };
+
+  const handleEdit = (r: NumberingRequest) => {
+    setEditingId(r.id);
+    setForm({
+      category: r.category,
+      trench_number: r.trench_number,
+      position: r.position,
+      shape: r.shape,
+      opening_size: r.opening_size,
+      soil_texture: r.soil_texture,
+      soil_color: r.soil_color,
+      inclusions: r.inclusions,
+      stratigraphy: r.stratigraphy,
+      remarks: r.remarks,
+    });
+    setShowForm(true);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    const res = await fetch('/api/numbering', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
-    });
-    if (res.ok) {
-      setShowForm(false);
-      setForm(emptyForm);
-      fetchRecords();
-    } else { alert((await res.json()).error || '提交失败'); }
+    if (editingId) {
+      const res = await fetch(`/api/numbering/${editingId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      if (res.ok) {
+        setShowForm(false);
+        setEditingId(null);
+        setForm(emptyForm);
+        fetchRecords();
+      } else { alert((await res.json()).error || '保存失败'); }
+    } else {
+      const res = await fetch('/api/numbering', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      if (res.ok) {
+        setShowForm(false);
+        setForm(emptyForm);
+        fetchRecords();
+      } else { alert((await res.json()).error || '提交失败'); }
+    }
     setSaving(false);
   };
 
-  const handleApprove = async (id: number) => {
-    const res = await fetch(`/api/numbering/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'approve' }),
-    });
-    if (res.ok) fetchRecords();
-    else alert((await res.json()).error || '操作失败');
-  };
-
-  const handleReject = async (id: number) => {
+  const handleReject = (id: number) => {
     const reason = prompt('请输入驳回原因');
     if (reason === null) return;
     if (!reason.trim()) { alert('驳回原因不能为空'); return; }
-    const res = await fetch(`/api/numbering/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'reject', reject_reason: reason.trim() }),
-    });
-    if (res.ok) fetchRecords();
-    else alert((await res.json()).error || '操作失败');
+    transition(id, 'reject', { reject_reason: reason.trim() });
   };
 
   const handleDelete = async (id: number) => {
@@ -141,23 +176,29 @@ function NumberingContent() {
 
   const inputCls = 'w-full px-2 py-1.5 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-amber-500';
   const labelCls = 'block text-xs font-medium text-stone-600 mb-1';
+  const btn = (cls: string) => `text-xs px-2 py-1 rounded ${cls}`;
 
   return (
     <div className="max-w-6xl mx-auto space-y-4">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-stone-800">田野考古给号系统</h2>
-        <button onClick={() => setShowForm(!showForm)} className="bg-amber-700 text-white px-4 py-2 rounded-lg text-sm hover:bg-amber-800 transition-colors">+ 申请给号</button>
+        <button onClick={handleOpenNew} className="bg-amber-700 text-white px-4 py-2 rounded-lg text-sm hover:bg-amber-800 transition-colors">+ 申请给号</button>
       </div>
 
       {showForm && (
         <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm border border-stone-200 p-5 space-y-3">
-          <div className="text-sm font-medium text-stone-700 mb-1">申请给号</div>
+          <div className="text-sm font-medium text-stone-700 mb-1">{editingId ? '编辑 / 填写记录' : '申请给号'}</div>
+          {editingId && <div className="text-xs text-stone-500">填写「占号」记录后保存将自动转为「已通过」。</div>}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div>
               <label className={labelCls}>类别 <span className="text-red-500">*</span></label>
-              <select value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))} className={inputCls}>
-                {NUMBERING_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
+              {editingId ? (
+                <input value={form.category} readOnly className="w-full px-2 py-1.5 border rounded text-sm bg-stone-50 text-stone-500" />
+              ) : (
+                <select value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))} className={inputCls}>
+                  {NUMBERING_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              )}
             </div>
             <div>
               <label className={labelCls}>探方号</label>
@@ -195,14 +236,16 @@ function NumberingContent() {
               <label className={labelCls}>备注/说明</label>
               <input value={form.remarks} onChange={e => setForm(p => ({ ...p, remarks: e.target.value }))} className={inputCls} />
             </div>
-            <div>
-              <label className={labelCls}>申请人</label>
-              <input value={displayName} readOnly className="w-full px-2 py-1.5 border rounded text-sm bg-stone-50 text-stone-500" />
-            </div>
+            {!editingId && (
+              <div>
+                <label className={labelCls}>申请人</label>
+                <input value={displayName} readOnly className="w-full px-2 py-1.5 border rounded text-sm bg-stone-50 text-stone-500" />
+              </div>
+            )}
           </div>
           <div className="flex gap-2">
-            <button type="submit" disabled={saving} className="bg-amber-700 text-white px-4 py-1.5 rounded text-sm hover:bg-amber-800 disabled:opacity-50">{saving ? '提交中…' : '提交申请'}</button>
-            <button type="button" onClick={() => setShowForm(false)} className="px-4 py-1.5 rounded text-sm border border-stone-300 text-stone-600 hover:bg-stone-50">取消</button>
+            <button type="submit" disabled={saving} className="bg-amber-700 text-white px-4 py-1.5 rounded text-sm hover:bg-amber-800 disabled:opacity-50">{saving ? '保存中…' : (editingId ? '保存' : '提交申请')}</button>
+            <button type="button" onClick={() => { setShowForm(false); setEditingId(null); }} className="px-4 py-1.5 rounded text-sm border border-stone-300 text-stone-600 hover:bg-stone-50">取消</button>
           </div>
         </form>
       )}
@@ -214,6 +257,9 @@ function NumberingContent() {
           <option value="待审批">待审批</option>
           <option value="已通过">已通过</option>
           <option value="已驳回">已驳回</option>
+          <option value="占号">占号</option>
+          <option value="待销号">待销号</option>
+          <option value="已销号">已销号</option>
         </select>
       </div>
 
@@ -238,7 +284,25 @@ function NumberingContent() {
               ) : records.length === 0 ? (
                 <tr><td colSpan={8} className="px-4 py-12 text-center text-stone-400">暂无记录</td></tr>
               ) : records.map(r => {
+                if (r.status === '已销号') {
+                  return (
+                    <tr key={r.id} className="hover:bg-stone-50 opacity-60">
+                      <td colSpan={2} className="px-4 py-3 text-stone-400 whitespace-nowrap">{r.assigned_number}</td>
+                      <td colSpan={5} className="px-4 py-3 text-stone-400">已销号</td>
+                      <td className="px-4 py-3 text-right">
+                        {isAdmin && (
+                          <div className="flex items-center justify-end gap-1">
+                            <button onClick={() => transition(r.id, 'undo-cancel')} className={btn('bg-stone-100 text-stone-700 hover:bg-stone-200')}>撤销销号</button>
+                            <button onClick={() => handleDelete(r.id)} className={btn('bg-red-50 text-red-700 hover:bg-red-100')}>删除</button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                }
+
                 const ownPending = r.status === '待审批' && r.applicant === displayName;
+                const numbered = r.status === '已通过' || r.status === '占号';
                 return (
                   <tr key={r.id} className="hover:bg-stone-50 align-top">
                     <td className="px-4 py-3 text-stone-800 font-medium whitespace-nowrap">{r.category}</td>
@@ -254,15 +318,27 @@ function NumberingContent() {
                       )}
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        {isAdmin && r.status === '待审批' && (
+                      <div className="flex items-center justify-end gap-1 flex-wrap">
+                        {r.status === '待审批' && isAdmin && (
                           <>
-                            <button onClick={() => handleApprove(r.id)} className="text-xs px-2 py-1 rounded bg-green-50 text-green-700 hover:bg-green-100">通过</button>
-                            <button onClick={() => handleReject(r.id)} className="text-xs px-2 py-1 rounded bg-red-50 text-red-700 hover:bg-red-100">驳回</button>
+                            <button onClick={() => transition(r.id, 'approve')} className={btn('bg-green-50 text-green-700 hover:bg-green-100')}>通过</button>
+                            <button onClick={() => handleReject(r.id)} className={btn('bg-red-50 text-red-700 hover:bg-red-100')}>驳回</button>
+                          </>
+                        )}
+                        {numbered && (
+                          <button onClick={() => transition(r.id, 'cancel-apply')} className={btn('bg-orange-50 text-orange-700 hover:bg-orange-100')}>申请销号</button>
+                        )}
+                        {numbered && isAdmin && (
+                          <button onClick={() => handleEdit(r)} className={btn('bg-stone-100 text-stone-700 hover:bg-stone-200')}>编辑</button>
+                        )}
+                        {r.status === '待销号' && isAdmin && (
+                          <>
+                            <button onClick={() => transition(r.id, 'cancel-approve')} className={btn('bg-green-50 text-green-700 hover:bg-green-100')}>通过销号</button>
+                            <button onClick={() => transition(r.id, 'cancel-reject')} className={btn('bg-red-50 text-red-700 hover:bg-red-100')}>驳回销号</button>
                           </>
                         )}
                         {(isAdmin || ownPending) && (
-                          <button onClick={() => handleDelete(r.id)} className="text-xs px-2 py-1 rounded bg-stone-100 text-stone-700 hover:bg-stone-200">删除</button>
+                          <button onClick={() => handleDelete(r.id)} className={btn('bg-stone-100 text-stone-700 hover:bg-stone-200')}>删除</button>
                         )}
                       </div>
                     </td>

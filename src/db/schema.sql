@@ -274,11 +274,12 @@ CREATE TABLE IF NOT EXISTS numbering_requests (
   remarks TEXT DEFAULT '',
   applicant TEXT DEFAULT '',
   apply_date TEXT DEFAULT '',
-  status TEXT DEFAULT '待审批' CHECK(status IN ('待审批','已通过','已驳回')),
+  status TEXT DEFAULT '待审批' CHECK(status IN ('待审批','已通过','已驳回','占号','待销号','已销号')),
   assigned_number TEXT DEFAULT '',
   reviewer TEXT DEFAULT '',
   review_date TEXT DEFAULT '',
   reject_reason TEXT DEFAULT '',
+  pre_cancel_status TEXT DEFAULT '',
   created_at DATETIME DEFAULT (datetime('now','localtime')),
   updated_at DATETIME DEFAULT (datetime('now','localtime'))
 );

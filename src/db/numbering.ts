@@ -22,6 +22,8 @@ export const CATEGORY_PREFIX: Record<string, string> = {
   '石块堆积': 'SK',
 };
 
+export type NumberingStatus = '待审批' | '已通过' | '已驳回' | '占号' | '待销号' | '已销号';
+
 export interface NumberingRequest {
   id: number;
   category: string;
@@ -36,11 +38,12 @@ export interface NumberingRequest {
   remarks: string;
   applicant: string;
   apply_date: string;
-  status: '待审批' | '已通过' | '已驳回';
+  status: NumberingStatus;
   assigned_number: string;
   reviewer: string;
   review_date: string;
   reject_reason: string;
+  pre_cancel_status: string;
   created_at: string;
   updated_at: string;
 }
@@ -167,6 +170,88 @@ export function rejectRequest(id: number, reviewer: string, reason: string): Num
     `UPDATE numbering_requests SET status='已驳回', reject_reason=@reject_reason, reviewer=@reviewer, review_date=@review_date, updated_at=@updated_at WHERE id=@id`
   ).run({ id, reject_reason: reason, reviewer, review_date: reviewDate, updated_at: now });
 
+  return getNumberingRequestById(id);
+}
+
+export function applyCancel(id: number): NumberingRequest | undefined {
+  const db = getDb();
+  const existing = getNumberingRequestById(id);
+  if (!existing || (existing.status !== '已通过' && existing.status !== '占号')) return undefined;
+
+  const now = new Date().toISOString();
+  db.prepare(
+    `UPDATE numbering_requests SET status='待销号', pre_cancel_status=@pre, updated_at=@updated_at WHERE id=@id`
+  ).run({ id, pre: existing.status, updated_at: now });
+
+  return getNumberingRequestById(id);
+}
+
+export function approveCancel(id: number, reviewer: string): NumberingRequest | undefined {
+  const db = getDb();
+  const existing = getNumberingRequestById(id);
+  if (!existing || existing.status !== '待销号') return undefined;
+
+  const now = new Date().toISOString();
+  const reviewDate = new Date().toISOString().slice(0, 10);
+  db.prepare(
+    `UPDATE numbering_requests SET status='已销号', reviewer=@reviewer, review_date=@review_date, updated_at=@updated_at WHERE id=@id`
+  ).run({ id, reviewer, review_date: reviewDate, updated_at: now });
+
+  return getNumberingRequestById(id);
+}
+
+export function rejectCancel(id: number): NumberingRequest | undefined {
+  const db = getDb();
+  const existing = getNumberingRequestById(id);
+  if (!existing || existing.status !== '待销号') return undefined;
+
+  const restore = existing.pre_cancel_status || '已通过';
+  const now = new Date().toISOString();
+  db.prepare(
+    `UPDATE numbering_requests SET status=@status, pre_cancel_status='', updated_at=@updated_at WHERE id=@id`
+  ).run({ id, status: restore, updated_at: now });
+
+  return getNumberingRequestById(id);
+}
+
+export function undoCancel(id: number): NumberingRequest | undefined {
+  const db = getDb();
+  const existing = getNumberingRequestById(id);
+  if (!existing || existing.status !== '已销号') return undefined;
+
+  const restore = existing.pre_cancel_status || '已通过';
+  const now = new Date().toISOString();
+  db.prepare(
+    `UPDATE numbering_requests SET status=@status, pre_cancel_status='', updated_at=@updated_at WHERE id=@id`
+  ).run({ id, status: restore, updated_at: now });
+
+  return getNumberingRequestById(id);
+}
+
+// admin 填写占号/已通过记录的信息；占号填写后转为已通过。
+export function updateNumberingRequest(id: number, input: Partial<NumberingCreateInput>): NumberingRequest | undefined {
+  const db = getDb();
+  const existing = getNumberingRequestById(id);
+  if (!existing || (existing.status !== '已通过' && existing.status !== '占号')) return undefined;
+
+  const now = new Date().toISOString();
+  const newStatus = existing.status === '占号' ? '已通过' : existing.status;
+  db.prepare(
+    `UPDATE numbering_requests SET trench_number=@trench_number, position=@position, shape=@shape, opening_size=@opening_size, soil_texture=@soil_texture, soil_color=@soil_color, inclusions=@inclusions, stratigraphy=@stratigraphy, remarks=@remarks, status=@status, updated_at=@updated_at WHERE id=@id`
+  ).run({
+    id,
+    trench_number: input.trench_number ?? existing.trench_number,
+    position: input.position ?? existing.position,
+    shape: input.shape ?? existing.shape,
+    opening_size: input.opening_size ?? existing.opening_size,
+    soil_texture: input.soil_texture ?? existing.soil_texture,
+    soil_color: input.soil_color ?? existing.soil_color,
+    inclusions: input.inclusions ?? existing.inclusions,
+    stratigraphy: input.stratigraphy ?? existing.stratigraphy,
+    remarks: input.remarks ?? existing.remarks,
+    status: newStatus,
+    updated_at: now,
+  });
   return getNumberingRequestById(id);
 }
 

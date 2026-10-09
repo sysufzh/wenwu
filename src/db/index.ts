@@ -4,6 +4,7 @@ import fs from 'fs';
 import bcrypt from 'bcryptjs';
 import { seedTransactionCategories } from './transactions';
 import { seedExcavation } from './seedExcavation';
+import { seedNumberingPlaceholders } from './seedNumbering';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 const DB_PATH = path.join(DATA_DIR, 'wenwu.db');
@@ -20,9 +21,11 @@ function getDb(): Database.Database {
     db.pragma('foreign_keys = ON');
     initializeSchema();
     migrateSchema();
+    migrateNumberingStatuses();
     seedUsers();
     seedTransactionCategories();
     seedExcavation();
+    seedNumberingPlaceholders();
   }
   return db;
 }
@@ -63,6 +66,55 @@ function migrateSchema() {
   for (const sql of migrations) {
     try { db.exec(sql); } catch { /* column already exists */ }
   }
+}
+
+// 给号系统状态从 3 种扩展到 6 种（新增占号/待销号/已销号 + pre_cancel_status），
+// SQLite 不支持修改 CHECK 约束，需重建表（保留数据）。
+function migrateNumberingStatuses() {
+  const row = db.prepare(`SELECT sql FROM sqlite_master WHERE type='table' AND name='numbering_requests'`).get() as { sql: string } | undefined;
+  if (!row || row.sql.includes("'已销号'")) return;
+
+  const rebuild = db.transaction(() => {
+    db.exec('DROP INDEX IF EXISTS idx_numbering_requests_status');
+    db.exec('DROP INDEX IF EXISTS idx_numbering_requests_category');
+    db.exec('ALTER TABLE numbering_requests RENAME TO numbering_requests_old');
+    db.exec(`CREATE TABLE numbering_requests (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      category TEXT NOT NULL DEFAULT '',
+      trench_number TEXT DEFAULT '',
+      position TEXT DEFAULT '',
+      shape TEXT DEFAULT '',
+      opening_size TEXT DEFAULT '',
+      soil_texture TEXT DEFAULT '',
+      soil_color TEXT DEFAULT '',
+      inclusions TEXT DEFAULT '',
+      stratigraphy TEXT DEFAULT '',
+      remarks TEXT DEFAULT '',
+      applicant TEXT DEFAULT '',
+      apply_date TEXT DEFAULT '',
+      status TEXT DEFAULT '待审批' CHECK(status IN ('待审批','已通过','已驳回','占号','待销号','已销号')),
+      assigned_number TEXT DEFAULT '',
+      reviewer TEXT DEFAULT '',
+      review_date TEXT DEFAULT '',
+      reject_reason TEXT DEFAULT '',
+      pre_cancel_status TEXT DEFAULT '',
+      created_at DATETIME DEFAULT (datetime('now','localtime')),
+      updated_at DATETIME DEFAULT (datetime('now','localtime'))
+    )`);
+    db.exec(`INSERT INTO numbering_requests (
+      id, category, trench_number, position, shape, opening_size, soil_texture, soil_color,
+      inclusions, stratigraphy, remarks, applicant, apply_date, status, assigned_number,
+      reviewer, review_date, reject_reason, pre_cancel_status, created_at, updated_at
+    ) SELECT
+      id, category, trench_number, position, shape, opening_size, soil_texture, soil_color,
+      inclusions, stratigraphy, remarks, applicant, apply_date, status, assigned_number,
+      reviewer, review_date, reject_reason, '', created_at, updated_at
+    FROM numbering_requests_old`);
+    db.exec('DROP TABLE numbering_requests_old');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_numbering_requests_status ON numbering_requests(status)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_numbering_requests_category ON numbering_requests(category)');
+  });
+  rebuild();
 }
 
 function seedUsers() {

@@ -3,6 +3,11 @@ import {
   getNumberingRequestById,
   approveRequest,
   rejectRequest,
+  applyCancel,
+  approveCancel,
+  rejectCancel,
+  undoCancel,
+  updateNumberingRequest,
   deleteNumberingRequest,
 } from '@/db/numbering';
 import { getSession } from '@/lib/auth';
@@ -23,28 +28,61 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   try {
     const session = await getSession();
     if (!session) return NextResponse.json({ error: '未登录' }, { status: 401 });
-    if (session.role !== 'admin') return NextResponse.json({ error: '无权限' }, { status: 403 });
 
     const { id } = await params;
     const body = await request.json();
     const reviewer = session.displayName || session.username;
+    const isAdmin = session.role === 'admin';
+    const nid = parseInt(id);
 
-    if (body.action === 'approve') {
-      const r = approveRequest(parseInt(id), reviewer);
-      if (!r) return NextResponse.json({ error: '无法通过该申请' }, { status: 400 });
-      return NextResponse.json(r);
-    }
+    const forbid = () => NextResponse.json({ error: '无权限' }, { status: 403 });
 
-    if (body.action === 'reject') {
-      if (!body.reject_reason || !body.reject_reason.trim()) {
-        return NextResponse.json({ error: '请填写驳回原因' }, { status: 400 });
+    switch (body.action) {
+      case 'approve': {
+        if (!isAdmin) return forbid();
+        const r = approveRequest(nid, reviewer);
+        if (!r) return NextResponse.json({ error: '无法通过该申请' }, { status: 400 });
+        return NextResponse.json(r);
       }
-      const r = rejectRequest(parseInt(id), reviewer, body.reject_reason.trim());
-      if (!r) return NextResponse.json({ error: '无法驳回该申请' }, { status: 400 });
-      return NextResponse.json(r);
+      case 'reject': {
+        if (!isAdmin) return forbid();
+        if (!body.reject_reason || !body.reject_reason.trim()) {
+          return NextResponse.json({ error: '请填写驳回原因' }, { status: 400 });
+        }
+        const r = rejectRequest(nid, reviewer, body.reject_reason.trim());
+        if (!r) return NextResponse.json({ error: '无法驳回该申请' }, { status: 400 });
+        return NextResponse.json(r);
+      }
+      case 'cancel-apply': {
+        const r = applyCancel(nid);
+        if (!r) return NextResponse.json({ error: '无法申请销号' }, { status: 400 });
+        return NextResponse.json(r);
+      }
+      case 'cancel-approve': {
+        if (!isAdmin) return forbid();
+        const r = approveCancel(nid, reviewer);
+        if (!r) return NextResponse.json({ error: '无法通过销号' }, { status: 400 });
+        return NextResponse.json(r);
+      }
+      case 'cancel-reject': {
+        if (!isAdmin) return forbid();
+        const r = rejectCancel(nid);
+        if (!r) return NextResponse.json({ error: '无法驳回销号' }, { status: 400 });
+        return NextResponse.json(r);
+      }
+      case 'undo-cancel': {
+        if (!isAdmin) return forbid();
+        const r = undoCancel(nid);
+        if (!r) return NextResponse.json({ error: '无法撤销销号' }, { status: 400 });
+        return NextResponse.json(r);
+      }
+      default: {
+        if (!isAdmin) return forbid();
+        const r = updateNumberingRequest(nid, body);
+        if (!r) return NextResponse.json({ error: '无法编辑该记录' }, { status: 400 });
+        return NextResponse.json(r);
+      }
     }
-
-    return NextResponse.json({ error: '无效操作' }, { status: 400 });
   } catch { return NextResponse.json({ error: '操作失败' }, { status: 500 }); }
 }
 
