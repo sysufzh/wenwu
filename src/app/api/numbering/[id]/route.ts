@@ -8,7 +8,6 @@ import {
   rejectCancel,
   undoCancel,
   updateNumberingRequest,
-  deleteNumberingRequest,
 } from '@/db/numbering';
 import { getSession } from '@/lib/auth';
 
@@ -84,22 +83,4 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       }
     }
   } catch { return NextResponse.json({ error: '操作失败' }, { status: 500 }); }
-}
-
-export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  try {
-    const session = await getSession();
-    if (!session) return NextResponse.json({ error: '未登录' }, { status: 401 });
-
-    const { id } = await params;
-    const existing = getNumberingRequestById(parseInt(id));
-    if (!existing) return NextResponse.json({ error: '记录不存在' }, { status: 404 });
-
-    const isAdmin = session.role === 'admin';
-    const isOwnPending = existing.status === '待审批' && existing.applicant === (session.displayName || session.username);
-    if (!isAdmin && !isOwnPending) return NextResponse.json({ error: '无权限' }, { status: 403 });
-
-    if (!deleteNumberingRequest(parseInt(id))) return NextResponse.json({ error: '删除失败' }, { status: 404 });
-    return NextResponse.json({ success: true });
-  } catch { return NextResponse.json({ error: '删除失败' }, { status: 500 }); }
 }

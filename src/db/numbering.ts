@@ -254,8 +254,3 @@ export function updateNumberingRequest(id: number, input: Partial<NumberingCreat
   });
   return getNumberingRequestById(id);
 }
-
-export function deleteNumberingRequest(id: number): boolean {
-  const db = getDb();
-  return db.prepare('DELETE FROM numbering_requests WHERE id = ?').run(id).changes > 0;
-}

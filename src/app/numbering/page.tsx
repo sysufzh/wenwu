@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useState, useEffect, useCallback, Suspense, Fragment } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 const NUMBERING_CATEGORIES = ['灰坑', '灰沟', '墓葬', '柱洞', '房子', '灶', '烧土遗迹', '石块堆积'];
@@ -56,6 +56,15 @@ const statusBadge: Record<string, string> = {
   '已销号': 'bg-stone-100 text-stone-500',
 };
 
+function DetailItem({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <div className="text-xs text-stone-400">{label}</div>
+      <div className="text-stone-700 whitespace-pre-wrap">{value || '—'}</div>
+    </div>
+  );
+}
+
 function NumberingContent() {
   const searchParams = useSearchParams();
   const [records, setRecords] = useState<NumberingRequest[]>([]);
@@ -70,6 +79,7 @@ function NumberingContent() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
+  const [detailId, setDetailId] = useState<number | null>(null);
 
   const [isAdmin, setIsAdmin] = useState(false);
   const [displayName, setDisplayName] = useState('');
@@ -165,13 +175,6 @@ function NumberingContent() {
     if (reason === null) return;
     if (!reason.trim()) { alert('驳回原因不能为空'); return; }
     transition(id, 'reject', { reject_reason: reason.trim() });
-  };
-
-  const handleDelete = async (id: number) => {
-    if (!confirm('确定删除？')) return;
-    const res = await fetch(`/api/numbering/${id}`, { method: 'DELETE' });
-    if (res.ok) fetchRecords();
-    else alert((await res.json()).error || '删除失败');
   };
 
   const inputCls = 'w-full px-2 py-1.5 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-amber-500';
@@ -291,58 +294,72 @@ function NumberingContent() {
                       <td colSpan={5} className="px-4 py-3 text-stone-400">已销号</td>
                       <td className="px-4 py-3 text-right">
                         {isAdmin && (
-                          <div className="flex items-center justify-end gap-1">
-                            <button onClick={() => transition(r.id, 'undo-cancel')} className={btn('bg-stone-100 text-stone-700 hover:bg-stone-200')}>撤销销号</button>
-                            <button onClick={() => handleDelete(r.id)} className={btn('bg-red-50 text-red-700 hover:bg-red-100')}>删除</button>
-                          </div>
+                          <button onClick={() => transition(r.id, 'undo-cancel')} className={btn('bg-stone-100 text-stone-700 hover:bg-stone-200')}>撤销销号</button>
                         )}
                       </td>
                     </tr>
                   );
                 }
 
-                const ownPending = r.status === '待审批' && r.applicant === displayName;
+                const open = detailId === r.id;
                 const numbered = r.status === '已通过' || r.status === '占号';
                 return (
-                  <tr key={r.id} className="hover:bg-stone-50 align-top">
-                    <td className="px-4 py-3 text-stone-800 font-medium whitespace-nowrap">{r.category}</td>
-                    <td className="px-4 py-3 font-medium text-stone-800 whitespace-nowrap">{r.assigned_number || '—'}</td>
-                    <td className="px-4 py-3 text-stone-600 hidden sm:table-cell whitespace-nowrap">{r.trench_number || '-'}</td>
-                    <td className="px-4 py-3 text-stone-600 hidden md:table-cell max-w-40 truncate">{r.position || '-'}</td>
-                    <td className="px-4 py-3 text-stone-600 hidden sm:table-cell whitespace-nowrap">{r.applicant || '-'}</td>
-                    <td className="px-4 py-3 text-stone-600 hidden md:table-cell whitespace-nowrap">{r.apply_date || '-'}</td>
-                    <td className="px-4 py-3 text-center">
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${statusBadge[r.status] || 'bg-stone-100 text-stone-600'}`}>{r.status}</span>
-                      {r.status === '已驳回' && r.reject_reason && (
-                        <div className="text-xs text-red-600 mt-1">{r.reject_reason}</div>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex items-center justify-end gap-1 flex-wrap">
-                        {r.status === '待审批' && isAdmin && (
-                          <>
-                            <button onClick={() => transition(r.id, 'approve')} className={btn('bg-green-50 text-green-700 hover:bg-green-100')}>通过</button>
-                            <button onClick={() => handleReject(r.id)} className={btn('bg-red-50 text-red-700 hover:bg-red-100')}>驳回</button>
-                          </>
+                  <Fragment key={r.id}>
+                    <tr className="hover:bg-stone-50 align-top">
+                      <td className="px-4 py-3 text-stone-800 font-medium whitespace-nowrap">{r.category}</td>
+                      <td className="px-4 py-3 font-medium text-stone-800 whitespace-nowrap">{r.assigned_number || '—'}</td>
+                      <td className="px-4 py-3 text-stone-600 hidden sm:table-cell whitespace-nowrap">{r.trench_number || '-'}</td>
+                      <td className="px-4 py-3 text-stone-600 hidden md:table-cell max-w-40 truncate">{r.position || '-'}</td>
+                      <td className="px-4 py-3 text-stone-600 hidden sm:table-cell whitespace-nowrap">{r.applicant || '-'}</td>
+                      <td className="px-4 py-3 text-stone-600 hidden md:table-cell whitespace-nowrap">{r.apply_date || '-'}</td>
+                      <td className="px-4 py-3 text-center">
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${statusBadge[r.status] || 'bg-stone-100 text-stone-600'}`}>{r.status}</span>
+                        {r.status === '已驳回' && r.reject_reason && (
+                          <div className="text-xs text-red-600 mt-1">{r.reject_reason}</div>
                         )}
-                        {numbered && (
-                          <button onClick={() => transition(r.id, 'cancel-apply')} className={btn('bg-orange-50 text-orange-700 hover:bg-orange-100')}>申请销号</button>
-                        )}
-                        {numbered && isAdmin && (
-                          <button onClick={() => handleEdit(r)} className={btn('bg-stone-100 text-stone-700 hover:bg-stone-200')}>编辑</button>
-                        )}
-                        {r.status === '待销号' && isAdmin && (
-                          <>
-                            <button onClick={() => transition(r.id, 'cancel-approve')} className={btn('bg-green-50 text-green-700 hover:bg-green-100')}>通过销号</button>
-                            <button onClick={() => transition(r.id, 'cancel-reject')} className={btn('bg-red-50 text-red-700 hover:bg-red-100')}>驳回销号</button>
-                          </>
-                        )}
-                        {(isAdmin || ownPending) && (
-                          <button onClick={() => handleDelete(r.id)} className={btn('bg-stone-100 text-stone-700 hover:bg-stone-200')}>删除</button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex items-center justify-end gap-1 flex-wrap">
+                          <button onClick={() => setDetailId(open ? null : r.id)} className={btn('bg-stone-100 text-stone-700 hover:bg-stone-200')}>{open ? '收起' : '详情'}</button>
+                          {r.status === '待审批' && isAdmin && (
+                            <>
+                              <button onClick={() => transition(r.id, 'approve')} className={btn('bg-green-50 text-green-700 hover:bg-green-100')}>通过</button>
+                              <button onClick={() => handleReject(r.id)} className={btn('bg-red-50 text-red-700 hover:bg-red-100')}>驳回</button>
+                            </>
+                          )}
+                          {numbered && (
+                            <button onClick={() => transition(r.id, 'cancel-apply')} className={btn('bg-orange-50 text-orange-700 hover:bg-orange-100')}>申请销号</button>
+                          )}
+                          {numbered && isAdmin && (
+                            <button onClick={() => handleEdit(r)} className={btn('bg-stone-100 text-stone-700 hover:bg-stone-200')}>编辑</button>
+                          )}
+                          {r.status === '待销号' && isAdmin && (
+                            <>
+                              <button onClick={() => transition(r.id, 'cancel-approve')} className={btn('bg-green-50 text-green-700 hover:bg-green-100')}>通过销号</button>
+                              <button onClick={() => transition(r.id, 'cancel-reject')} className={btn('bg-red-50 text-red-700 hover:bg-red-100')}>驳回销号</button>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                    {open && (
+                      <tr className="bg-stone-50/50">
+                        <td colSpan={8} className="px-4 py-3">
+                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 text-sm">
+                            <DetailItem label="开口形状" value={r.shape} />
+                            <DetailItem label="尺寸" value={r.opening_size} />
+                            <DetailItem label="填土土质" value={r.soil_texture} />
+                            <DetailItem label="土色" value={r.soil_color} />
+                            <DetailItem label="包含物" value={r.inclusions} />
+                            <DetailItem label="层位关系" value={r.stratigraphy} />
+                            <DetailItem label="备注" value={r.remarks} />
+                            <DetailItem label="给号人" value={r.reviewer} />
+                            <DetailItem label="给号日期" value={r.review_date} />
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
                 );
               })}
             </tbody>
