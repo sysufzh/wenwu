@@ -51,7 +51,7 @@ export interface FeatureLayer {
   soil_texture: string;
   density: string;
   thickness: string;
-  deposit_shape: string;
+  distribution: string;
   inclusions: string;
   inclusions_json: string;
   specimens_json: string;
@@ -119,7 +119,7 @@ export interface LayerInput {
   soil_texture?: string;
   density?: string;
   thickness?: string;
-  deposit_shape?: string;
+  distribution?: string;
   inclusions?: InclusionRow[];
   specimens?: SpecimenRow[];
   soil_sample?: string;
@@ -307,10 +307,10 @@ export function deleteFeature(id: number): boolean {
 function saveChildren(db: ReturnType<typeof getDb>, featureId: number, layers: LayerInput[], artifacts: ArtifactInput[]) {
   const insertLayer = db.prepare(
     `INSERT INTO feature_layers (feature_id, layer_number, soil_color, soil_texture, density, thickness,
-       deposit_shape, inclusions, inclusions_json, specimens_json, soil_sample, upper_interface, lower_interface, observation,
+       distribution, inclusions, inclusions_json, specimens_json, soil_sample, upper_interface, lower_interface, observation,
        preservation, cleaning_method, deposit_nature, depth_text, remarks, sort_order)
      VALUES (@feature_id, @layer_number, @soil_color, @soil_texture, @density, @thickness,
-       @deposit_shape, @inclusions, @inclusions_json, @specimens_json, @soil_sample, @upper_interface, @lower_interface, @observation,
+       @distribution, @inclusions, @inclusions_json, @specimens_json, @soil_sample, @upper_interface, @lower_interface, @observation,
        @preservation, @cleaning_method, @deposit_nature, @depth_text, @remarks, @sort_order)`
   );
   layers.forEach((l, i) => {
@@ -321,7 +321,7 @@ function saveChildren(db: ReturnType<typeof getDb>, featureId: number, layers: L
       soil_texture: l.soil_texture || '',
       density: l.density || '',
       thickness: l.thickness || '',
-      deposit_shape: l.deposit_shape || '',
+      distribution: l.distribution || '',
       inclusions: '',
       inclusions_json: JSON.stringify(l.inclusions || []),
       specimens_json: JSON.stringify(l.specimens || []),

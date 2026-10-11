@@ -6,7 +6,7 @@ import type { InclusionRow, SpecimenRow } from '@/db/excavation';
 
 interface LayerInput {
   layer_number: string; soil_color: string; soil_texture: string; density: string;
-  thickness: string; deposit_shape: string;
+  thickness: string; distribution: string;
   inclusions: InclusionRow[];
   specimens: SpecimenRow[];
   soil_sample: string; upper_interface: string; lower_interface: string; observation: string;
@@ -16,7 +16,7 @@ interface LayerInput {
 // DB 读出的层结构（编辑回显用，包含物/标本是 JSON 文本）
 interface RawLayer {
   layer_number?: string; soil_color?: string; soil_texture?: string; density?: string;
-  thickness?: string; deposit_shape?: string;
+  thickness?: string; distribution?: string;
   inclusions?: string; inclusions_json?: string; specimens_json?: string;
   soil_sample?: string; upper_interface?: string; lower_interface?: string; observation?: string;
   preservation?: string; cleaning_method?: string; deposit_nature?: string; depth_text?: string; remarks?: string;
@@ -39,7 +39,7 @@ const emptySpecimen = (): SpecimenRow => ({ number: '', category: '', quantity: 
 
 const emptyLayer = (): LayerInput => ({
   layer_number: '', soil_color: '', soil_texture: '', density: '', thickness: '',
-  deposit_shape: '',
+  distribution: '',
   inclusions: [emptyInclusion()],
   specimens: [emptySpecimen()],
   soil_sample: '', upper_interface: '', lower_interface: '', observation: '',
@@ -81,7 +81,7 @@ function toFormLayer(raw: RawLayer): LayerInput {
     soil_texture: raw.soil_texture ?? '',
     density: raw.density ?? '',
     thickness: raw.thickness ?? '',
-    deposit_shape: raw.deposit_shape ?? '',
+    distribution: raw.distribution ?? '',
     inclusions,
     specimens: parseJson<SpecimenRow[]>(raw.specimens_json, []),
     soil_sample: raw.soil_sample ?? '',
@@ -298,7 +298,7 @@ export default function FeatureForm({ initial, id }: { initial?: FeatureFormValu
               <Field label="土质"><input className={inputCls} value={l.soil_texture} onChange={e => setLayer(i, 'soil_texture', e.target.value)} /></Field>
               <Field label="致密度"><input className={inputCls} value={l.density} onChange={e => setLayer(i, 'density', e.target.value)} /></Field>
               <Field label="厚度"><input className={inputCls} value={l.thickness} onChange={e => setLayer(i, 'thickness', e.target.value)} /></Field>
-              <Field label="堆积形状"><input className={inputCls} value={l.deposit_shape} onChange={e => setLayer(i, 'deposit_shape', e.target.value)} /></Field>
+              <Field label="分布范围"><input className={inputCls} value={l.distribution} onChange={e => setLayer(i, 'distribution', e.target.value)} /></Field>
               <Field label="保存状况"><input className={inputCls} value={l.preservation} onChange={e => setLayer(i, 'preservation', e.target.value)} /></Field>
               <Field label="堆积性质"><input className={inputCls} value={l.deposit_nature} onChange={e => setLayer(i, 'deposit_nature', e.target.value)} /></Field>
             </div>

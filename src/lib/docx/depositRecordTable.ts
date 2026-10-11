@@ -9,7 +9,7 @@ function layerRows(l: FeatureLayer): TableRow[] {
     kvRow('土质', l.soil_texture),
     kvRow('致密度', l.density),
     kvRow('厚度', l.thickness),
-    kvRow('堆积形状', l.deposit_shape),
+    kvRow('分布范围', l.distribution),
     kvRow('包含物', layerInclusionsText(l), { valueSize: 21 }),
     kvRow('标本', composeSpecimensText(l.specimens_json), { valueSize: 21 }),
     kvRow('土样', l.soil_sample),

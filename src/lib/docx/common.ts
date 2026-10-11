@@ -1,6 +1,6 @@
 import {
   Document, Paragraph, TextRun, TableCell, TableRow, Table, WidthType,
-  BorderStyle, AlignmentType, VerticalAlign, Packer, PageOrientation,
+  BorderStyle, AlignmentType, VerticalAlign, Packer, PageOrientation, Footer, PageNumber,
 } from 'docx';
 
 // 中文宋体，保证中文在 Word 中正常显示
@@ -79,7 +79,21 @@ export function makeTable(rows: TableRow[], columnWidths: number[]): Table {
 }
 
 export function makeDoc(children: (Paragraph | Table)[]): Document {
+  const footer = new Footer({
+    children: [
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        children: [
+          new TextRun({ text: '第 ', font: ZH, size: 18 }),
+          new TextRun({ children: [PageNumber.CURRENT], font: ZH, size: 18 }),
+          new TextRun({ text: ' 页', font: ZH, size: 18 }),
+        ],
+      }),
+    ],
+  });
+
   return new Document({
+    features: { updateFields: true },
     sections: [{
       properties: {
         page: {
@@ -87,6 +101,7 @@ export function makeDoc(children: (Paragraph | Table)[]): Document {
           margin: { top: 1134, bottom: 1134, left: 1134, right: 1134 },
         },
       },
+      footers: { default: footer },
       children,
     }],
   });

@@ -89,7 +89,7 @@ function depositToLayer(d: Deposit): LayerInput {
     soil_texture: d.soil_texture || '',
     density: d.density || '',
     thickness: d.thickness || '',
-    deposit_shape: '',
+    distribution: '',
     inclusions: d.inclusions || [],
     specimens: d.specimens || [],
     soil_sample: d.soil_sample || '',

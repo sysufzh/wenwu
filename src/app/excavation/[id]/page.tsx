@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 
 interface Layer {
   id: number; layer_number: string; soil_color: string; soil_texture: string; density: string;
-  thickness: string; deposit_shape: string; inclusions: string; preservation: string;
+  thickness: string; distribution: string; inclusions: string; preservation: string;
   cleaning_method: string; deposit_nature: string; depth_text: string; remarks: string;
 }
 
@@ -176,7 +176,7 @@ function FeatureDetail() {
               <div key={l.id} className="border border-stone-100 rounded-lg p-3 text-sm">
                 <div className="font-medium text-stone-800">{l.layer_number || '—'}</div>
                 <div className="text-stone-600 mt-1">
-                  {[l.soil_color, l.soil_texture, l.density, l.thickness, l.deposit_shape].filter(Boolean).join(' / ')}
+                  {[l.soil_color, l.soil_texture, l.density, l.thickness, l.distribution].filter(Boolean).join(' / ')}
                 </div>
                 {l.inclusions && <div className="text-stone-600">含：{l.inclusions}</div>}
                 {l.cleaning_method && <div className="text-stone-600">清理：{l.cleaning_method}</div>}

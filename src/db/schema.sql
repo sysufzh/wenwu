@@ -225,7 +225,7 @@ CREATE TABLE IF NOT EXISTS feature_layers (
   soil_texture TEXT DEFAULT '',
   density TEXT DEFAULT '',
   thickness TEXT DEFAULT '',
-  deposit_shape TEXT DEFAULT '',
+  distribution TEXT DEFAULT '',
   inclusions TEXT DEFAULT '',
   inclusions_json TEXT DEFAULT '',
   specimens_json TEXT DEFAULT '',

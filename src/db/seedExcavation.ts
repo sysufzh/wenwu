@@ -49,27 +49,27 @@ export function seedExcavation() {
   const layers = [
     {
       layer_number: '①', soil_color: '棕褐色加风化土', soil_texture: '', density: '致密',
-      thickness: '30厘米', deposit_shape: '', inclusions: '大量基岩碎粒、小砾石和零星的石块、碳粒、烧土粒、陶片等',
+      thickness: '30厘米', distribution: '', inclusions: '大量基岩碎粒、小砾石和零星的石块、碳粒、烧土粒、陶片等',
       preservation: '良好', cleaning_method: '使用小锄头和手铲清理，依《田野考古工作规程》，自上而下，由晚及早，每次4-5cm',
       deposit_nature: '自然填土', depth_text: '', remarks: '',
     },
     {
       layer_number: '②', soil_color: '灰棕色细沙土', soil_texture: '细沙土', density: '致密',
-      thickness: '12厘米', deposit_shape: '', inclusions: '有零星的小砾石，底部较多不规则石块',
+      thickness: '12厘米', distribution: '', inclusions: '有零星的小砾石，底部较多不规则石块',
       preservation: '', cleaning_method: '', deposit_nature: '', depth_text: '', remarks: '',
     },
     {
       layer_number: '③', soil_color: '棕褐色土', soil_texture: '', density: '致密',
-      thickness: '12厘米', deposit_shape: '', inclusions: '大量完整贝壳和零星的兽骨、夹砂陶片等',
+      thickness: '12厘米', distribution: '', inclusions: '大量完整贝壳和零星的兽骨、夹砂陶片等',
       preservation: '', cleaning_method: '', deposit_nature: '', depth_text: '', remarks: '仅分布在中间坑',
     },
   ];
 
   const insertLayer = db.prepare(
     `INSERT INTO feature_layers (feature_id, layer_number, soil_color, soil_texture, density, thickness,
-      deposit_shape, inclusions, preservation, cleaning_method, deposit_nature, depth_text, remarks, sort_order)
+      distribution, inclusions, preservation, cleaning_method, deposit_nature, depth_text, remarks, sort_order)
      VALUES (@feature_id, @layer_number, @soil_color, @soil_texture, @density, @thickness,
-      @deposit_shape, @inclusions, @preservation, @cleaning_method, @deposit_nature, @depth_text, @remarks, @sort_order)`
+      @distribution, @inclusions, @preservation, @cleaning_method, @deposit_nature, @depth_text, @remarks, @sort_order)`
   );
   layers.forEach((l, i) => insertLayer.run({ feature_id: featureId, ...l, sort_order: i }));
 
