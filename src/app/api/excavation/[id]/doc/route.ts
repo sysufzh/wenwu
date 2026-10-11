@@ -47,6 +47,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       },
     });
   } catch (error) {
-    return NextResponse.json({ error: '生成文档失败' }, { status: 500 });
+    console.error('生成文档失败:', error);
+    const detail = error instanceof Error ? error.message : String(error);
+    return NextResponse.json({ error: '生成文档失败', detail }, { status: 500 });
   }
 }
