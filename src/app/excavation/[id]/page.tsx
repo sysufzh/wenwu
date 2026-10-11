@@ -23,7 +23,7 @@ interface Feature {
   position: string; shape: string; opening_size: string; depth: string; bottom_size: string;
   drawing_info: string; photo_info: string; excavation_process: string; wall_bottom_detail: string;
   stratigraphy: string; dating: string; function_nature: string; sampling: string; remarks: string;
-  recorder: string; record_date: string;
+  recorder: string; reviewer: string; record_date: string;
   layers: Layer[]; artifacts: Artifact[];
 }
 
@@ -164,6 +164,7 @@ function FeatureDetail() {
         <Field label="采样" value={feature.sampling} />
         <Field label="备注" value={feature.remarks} />
         <Field label="记录者" value={feature.recorder} />
+        <Field label="审核者" value={feature.reviewer} />
         <Field label="记录日期" value={feature.record_date} />
       </div>
 

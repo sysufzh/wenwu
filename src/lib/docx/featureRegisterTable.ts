@@ -29,6 +29,7 @@ export function buildFeatureRegisterTable(f: FeatureWithChildren): Document {
   return makeDoc([
     title('遗 迹 登 记 表', 32),
     infoLine(`年度：${f.year}    遗址名：${f.site_name || '牛头山遗址'}    区位：${f.district}    记录者：${f.recorder}`),
+    infoLine(`审核者：${f.reviewer}`),
     makeTable([header, data], [700, 1400, 1100, 1300, 1600, 2200, 1500, 800]),
     infoLine(`${UNIT_NAME}制表`),
   ]);

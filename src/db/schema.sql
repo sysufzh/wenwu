@@ -207,6 +207,7 @@ CREATE TABLE IF NOT EXISTS excavation_features (
   sampling TEXT DEFAULT '',
   remarks TEXT DEFAULT '',
   recorder TEXT DEFAULT '',
+  reviewer TEXT DEFAULT '',
   record_date TEXT DEFAULT '',
   site_name TEXT DEFAULT '牛头山遗址',
   district TEXT DEFAULT '',

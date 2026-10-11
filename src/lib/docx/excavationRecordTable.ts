@@ -18,6 +18,7 @@ export function buildExcavationRecordTable(f: FeatureWithChildren): Document {
     kvRow('绘图号', f.drawing_info || '见绘图登记表'),
     kvRow('照相号', f.photo_info || '见照相登记表'),
     kvRow('记录者', f.recorder),
+    kvRow('审核者', f.reviewer),
     kvRow('层位关系', f.stratigraphy),
     kvRow('深度', f.depth),
     kvRow('堆积描述', depositText, { valueSize: 21 }),

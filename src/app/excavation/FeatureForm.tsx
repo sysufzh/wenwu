@@ -31,7 +31,7 @@ interface FeatureFormValues {
   position: string; shape: string; opening_size: string; depth: string; bottom_size: string;
   drawing_info: string; photo_info: string; excavation_process: string; wall_bottom_detail: string;
   stratigraphy: string; dating: string; function_nature: string; sampling: string; remarks: string;
-  recorder: string; record_date: string;
+  recorder: string; reviewer: string; record_date: string;
 }
 
 const emptyInclusion = (): InclusionRow => ({ type: '', proportion: '', particleSize: '', sorting: '一般', roundness: '略有棱角的' });
@@ -55,7 +55,7 @@ const defaultValues: FeatureFormValues = {
   position: '', shape: '', opening_size: '', depth: '', bottom_size: '',
   drawing_info: '', photo_info: '', excavation_process: '', wall_bottom_detail: '',
   stratigraphy: '', dating: '', function_nature: '', sampling: '', remarks: '',
-  recorder: '', record_date: new Date().toISOString().slice(0, 10),
+  recorder: '', reviewer: '', record_date: new Date().toISOString().slice(0, 10),
 };
 
 const inputCls = 'w-full px-3 py-2 border border-stone-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-500';
@@ -278,6 +278,9 @@ export default function FeatureForm({ initial, id }: { initial?: FeatureFormValu
         <div className="grid grid-cols-2 gap-3">
           <Field label="记录者">
             <input className={inputCls} value={form.recorder} onChange={e => set('recorder', e.target.value)} />
+          </Field>
+          <Field label="审核者">
+            <input className={inputCls} value={form.reviewer} onChange={e => set('reviewer', e.target.value)} />
           </Field>
         </div>
       </Section>

@@ -34,6 +34,7 @@ export interface ExcavationFeature {
   sampling: string;
   remarks: string;
   recorder: string;
+  reviewer: string;
   record_date: string;
   site_name: string;
   district: string;
@@ -103,6 +104,7 @@ export interface FeatureInput {
   sampling?: string;
   remarks?: string;
   recorder?: string;
+  reviewer?: string;
   record_date?: string;
   site_name?: string;
   district?: string;
@@ -153,7 +155,7 @@ const FEATURE_FIELDS = [
   'feature_number', 'feature_type', 'trench_number', 'position', 'shape', 'opening_size', 'depth',
   'bottom_size', 'drawing_info', 'photo_info', 'excavation_process', 'wall_bottom_detail',
   'stratigraphy', 'dating', 'function_nature', 'sampling', 'remarks', 'recorder',
-  'record_date', 'site_name', 'district', 'year',
+  'reviewer', 'record_date', 'site_name', 'district', 'year',
 ].join(', ');
 
 export function getFeatures(params: FeatureListParams = {}) {
@@ -205,7 +207,7 @@ export function createFeature(input: FeatureInput): FeatureWithChildren {
      VALUES (@feature_number, @feature_type, @trench_number, @position, @shape, @opening_size, @depth,
              @bottom_size, @drawing_info, @photo_info, @excavation_process, @wall_bottom_detail,
              @stratigraphy, @dating, @function_nature, @sampling, @remarks, @recorder,
-             @record_date, @site_name, @district, @year, @created_at, @updated_at)`
+             @reviewer, @record_date, @site_name, @district, @year, @created_at, @updated_at)`
   );
   const result = stmt.run({
     feature_number: input.feature_number || '',
@@ -226,6 +228,7 @@ export function createFeature(input: FeatureInput): FeatureWithChildren {
     sampling: input.sampling || '',
     remarks: input.remarks || '',
     recorder: input.recorder || '',
+    reviewer: input.reviewer || '',
     record_date: input.record_date || '',
     site_name: input.site_name || '牛头山遗址',
     district: input.district || '',
@@ -252,7 +255,7 @@ export function updateFeature(id: number, input: FeatureInput): FeatureWithChild
       drawing_info = @drawing_info, photo_info = @photo_info, excavation_process = @excavation_process,
       wall_bottom_detail = @wall_bottom_detail, stratigraphy = @stratigraphy, dating = @dating,
       function_nature = @function_nature, sampling = @sampling, remarks = @remarks,
-      recorder = @recorder, record_date = @record_date, site_name = @site_name,
+      recorder = @recorder, reviewer = @reviewer, record_date = @record_date, site_name = @site_name,
       district = @district, year = @year, updated_at = @updated_at
     WHERE id = @id`
   );
@@ -276,6 +279,7 @@ export function updateFeature(id: number, input: FeatureInput): FeatureWithChild
     sampling: input.sampling ?? existing.sampling,
     remarks: input.remarks ?? existing.remarks,
     recorder: input.recorder ?? existing.recorder,
+    reviewer: input.reviewer ?? existing.reviewer,
     record_date: input.record_date ?? existing.record_date,
     site_name: input.site_name ?? existing.site_name,
     district: input.district ?? existing.district,

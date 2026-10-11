@@ -25,6 +25,7 @@ export function buildExcavationRecord(f: FeatureWithChildren): Document {
     kvRow('性质功能', f.function_nature),
     kvRow('备注', f.remarks),
     kvRow('记录者', `${f.recorder}    记录日期：${f.record_date}`),
+    kvRow('审核者', f.reviewer),
   ];
 
   const table = makeTable(rows, [2200, 7800]);

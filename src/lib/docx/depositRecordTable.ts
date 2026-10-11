@@ -42,5 +42,7 @@ export function buildDepositRecordTable(f: FeatureWithChildren): Document {
     children.push(new Paragraph({ children: [run('（无堆积层记录）', { size: 21 })] }));
   }
 
+  children.push(makeTable([kvRow('记录者', f.recorder), kvRow('审核者', f.reviewer)], [2200, 7800]));
+
   return makeDoc(children);
 }
