@@ -36,7 +36,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const body = new Uint8Array(buffer);
 
     const baseName = `${feature.trench_number}${feature.feature_number}${FILENAME[type]}`;
-    const asciiName = `${feature.trench_number}${feature.feature_number}.docx`;
+    const stem = `${feature.trench_number}${feature.feature_number}`.replace(/[^A-Za-z0-9._-]/g, '');
+    const asciiName = `${stem || 'document'}.docx`;
     const encoded = encodeURIComponent(`${baseName}.docx`);
 
     return new NextResponse(body, {
