@@ -61,6 +61,7 @@ function migrateSchema() {
     "ALTER TABLE excavation_diaries ADD COLUMN workers TEXT DEFAULT ''",
     "ALTER TABLE excavation_diaries ADD COLUMN status TEXT DEFAULT '已保存'",
     "ALTER TABLE excavation_features ADD COLUMN reviewer TEXT DEFAULT ''",
+    "ALTER TABLE excavation_features ADD COLUMN opening_depth TEXT DEFAULT ''",
     "ALTER TABLE feature_layers ADD COLUMN distribution TEXT DEFAULT ''",
     "ALTER TABLE feature_artifacts ADD COLUMN name TEXT DEFAULT ''",
     "ALTER TABLE feature_artifacts ADD COLUMN description TEXT DEFAULT ''",

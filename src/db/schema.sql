@@ -195,6 +195,7 @@ CREATE TABLE IF NOT EXISTS excavation_features (
   position TEXT DEFAULT '',
   shape TEXT DEFAULT '',
   opening_size TEXT DEFAULT '',
+  opening_depth TEXT DEFAULT '',
   depth TEXT DEFAULT '',
   bottom_size TEXT DEFAULT '',
   drawing_info TEXT DEFAULT '',

@@ -28,7 +28,7 @@ interface ArtifactInput {
 
 interface FeatureFormValues {
   feature_number: string; feature_type: string; trench_number: string; site_name: string; year: string; district: string;
-  position: string; shape: string; opening_size: string; depth: string; bottom_size: string;
+  position: string; shape: string; opening_size: string; opening_depth: string; depth: string; bottom_size: string;
   drawing_info: string; photo_info: string; excavation_process: string; wall_bottom_detail: string;
   stratigraphy: string; dating: string; function_nature: string; sampling: string; remarks: string;
   recorder: string; reviewer: string; record_date: string;
@@ -52,7 +52,7 @@ const emptyArtifact = (): ArtifactInput => ({
 
 const defaultValues: FeatureFormValues = {
   feature_number: '', feature_type: '', trench_number: '', site_name: '牛头山遗址', year: '2025', district: '',
-  position: '', shape: '', opening_size: '', depth: '', bottom_size: '',
+  position: '', shape: '', opening_size: '', opening_depth: '', depth: '', bottom_size: '',
   drawing_info: '', photo_info: '', excavation_process: '', wall_bottom_detail: '',
   stratigraphy: '', dating: '', function_nature: '', sampling: '', remarks: '',
   recorder: '', reviewer: '', record_date: new Date().toISOString().slice(0, 10),
@@ -233,6 +233,9 @@ export default function FeatureForm({ initial, id }: { initial?: FeatureFormValu
           </Field>
           <Field label="口部尺寸">
             <input className={inputCls} value={form.opening_size} onChange={e => set('opening_size', e.target.value)} />
+          </Field>
+          <Field label="开口距地表深度">
+            <input className={inputCls} value={form.opening_depth} onChange={e => set('opening_depth', e.target.value)} />
           </Field>
           <Field label="深度">
             <input className={inputCls} value={form.depth} onChange={e => set('depth', e.target.value)} />

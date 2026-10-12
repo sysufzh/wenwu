@@ -11,6 +11,7 @@ export function buildExcavationRecord(f: FeatureWithChildren): Document {
     kvRow('位置', f.position),
     kvRow('形状', f.shape),
     kvRow('口部尺寸', f.opening_size),
+    kvRow('开口距地表深度', f.opening_depth),
     kvRow('深度', f.depth),
     kvRow('底部尺寸', f.bottom_size),
     kvRow('绘图号与图名', f.drawing_info),

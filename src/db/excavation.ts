@@ -22,6 +22,7 @@ export interface ExcavationFeature {
   position: string;
   shape: string;
   opening_size: string;
+  opening_depth: string;
   depth: string;
   bottom_size: string;
   drawing_info: string;
@@ -92,6 +93,7 @@ export interface FeatureInput {
   position?: string;
   shape?: string;
   opening_size?: string;
+  opening_depth?: string;
   depth?: string;
   bottom_size?: string;
   drawing_info?: string;
@@ -152,7 +154,7 @@ export interface FeatureListParams {
 }
 
 const FEATURE_FIELDS = [
-  'feature_number', 'feature_type', 'trench_number', 'position', 'shape', 'opening_size', 'depth',
+  'feature_number', 'feature_type', 'trench_number', 'position', 'shape', 'opening_size', 'opening_depth', 'depth',
   'bottom_size', 'drawing_info', 'photo_info', 'excavation_process', 'wall_bottom_detail',
   'stratigraphy', 'dating', 'function_nature', 'sampling', 'remarks', 'recorder',
   'reviewer', 'record_date', 'site_name', 'district', 'year',
@@ -204,7 +206,7 @@ export function createFeature(input: FeatureInput): FeatureWithChildren {
 
   const stmt = db.prepare(
     `INSERT INTO excavation_features (${FEATURE_FIELDS}, created_at, updated_at)
-     VALUES (@feature_number, @feature_type, @trench_number, @position, @shape, @opening_size, @depth,
+     VALUES (@feature_number, @feature_type, @trench_number, @position, @shape, @opening_size, @opening_depth, @depth,
              @bottom_size, @drawing_info, @photo_info, @excavation_process, @wall_bottom_detail,
              @stratigraphy, @dating, @function_nature, @sampling, @remarks, @recorder,
              @reviewer, @record_date, @site_name, @district, @year, @created_at, @updated_at)`
@@ -216,6 +218,7 @@ export function createFeature(input: FeatureInput): FeatureWithChildren {
     position: input.position || '',
     shape: input.shape || '',
     opening_size: input.opening_size || '',
+    opening_depth: input.opening_depth || '',
     depth: input.depth || '',
     bottom_size: input.bottom_size || '',
     drawing_info: input.drawing_info || '',
@@ -251,7 +254,7 @@ export function updateFeature(id: number, input: FeatureInput): FeatureWithChild
   const stmt = db.prepare(
     `UPDATE excavation_features SET
       feature_number = @feature_number, feature_type = @feature_type, trench_number = @trench_number, position = @position,
-      shape = @shape, opening_size = @opening_size, depth = @depth, bottom_size = @bottom_size,
+      shape = @shape, opening_size = @opening_size, opening_depth = @opening_depth, depth = @depth, bottom_size = @bottom_size,
       drawing_info = @drawing_info, photo_info = @photo_info, excavation_process = @excavation_process,
       wall_bottom_detail = @wall_bottom_detail, stratigraphy = @stratigraphy, dating = @dating,
       function_nature = @function_nature, sampling = @sampling, remarks = @remarks,
@@ -267,6 +270,7 @@ export function updateFeature(id: number, input: FeatureInput): FeatureWithChild
     position: input.position ?? existing.position,
     shape: input.shape ?? existing.shape,
     opening_size: input.opening_size ?? existing.opening_size,
+    opening_depth: input.opening_depth ?? existing.opening_depth,
     depth: input.depth ?? existing.depth,
     bottom_size: input.bottom_size ?? existing.bottom_size,
     drawing_info: input.drawing_info ?? existing.drawing_info,

@@ -20,7 +20,7 @@ interface RelatedDiary {
 
 interface Feature {
   id: number; feature_number: string; feature_type: string; trench_number: string; site_name: string; year: string; district: string;
-  position: string; shape: string; opening_size: string; depth: string; bottom_size: string;
+  position: string; shape: string; opening_size: string; opening_depth: string; depth: string; bottom_size: string;
   drawing_info: string; photo_info: string; excavation_process: string; wall_bottom_detail: string;
   stratigraphy: string; dating: string; function_nature: string; sampling: string; remarks: string;
   recorder: string; reviewer: string; record_date: string;
@@ -148,6 +148,7 @@ function FeatureDetail() {
         <Field label="位置" value={feature.position} />
         <Field label="形状" value={feature.shape} />
         <Field label="口部尺寸" value={feature.opening_size} />
+        <Field label="开口距地表深度" value={feature.opening_depth} />
         <Field label="深度" value={feature.depth} />
         <Field label="底部尺寸" value={feature.bottom_size} />
         <Field label="绘图号与图名" value={feature.drawing_info} />
