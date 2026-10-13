@@ -92,6 +92,23 @@ function normalizeDeposit(d: Deposit & { soil_density?: string; texture?: string
   };
 }
 
+function dedupeDeposits(list: Deposit[]): Deposit[] {
+  const result: Deposit[] = [];
+  const indexByLayer = new Map<string, number>();
+  for (const d of list) {
+    const key = (d.layer || '').trim();
+    if (!key) { result.push(d); continue; }
+    const idx = indexByLayer.get(key);
+    if (idx === undefined) {
+      indexByLayer.set(key, result.length);
+      result.push(d);
+    } else {
+      result[idx] = d;
+    }
+  }
+  return result;
+}
+
 function depositToLayer(d: Deposit): LayerInput {
   return {
     layer_number: d.layer || '',
@@ -171,24 +188,45 @@ export function importFeatureFromDiaries(featureNumber: string): ImportedFeature
     return parts.filter(Boolean).join('；');
   }));
 
-  // 堆积层/遗物：优先「全部清理完成」的 complete_deposits，否则聚合各日 half_deposits
-  const completePanels = allPanels.filter(p => p.complete_status === '全部清理完成' && (p.complete_deposits || []).length > 0);
-  let deposits: Deposit[];
-  if (completePanels.length > 0) {
-    deposits = completePanels.flatMap(p => (p.complete_deposits || []).map(normalizeDeposit));
-  } else {
-    deposits = allPanels.flatMap(p => (p.half_deposits || []).map(normalizeDeposit));
-  }
+  // 堆积层：合并各日记的 half_deposits 与 complete_deposits，按层号去重（后出现者覆盖前者，最终记录优先）
+  const deposits = dedupeDeposits(allPanels.flatMap(p => [
+    ...(p.half_deposits || []).map(normalizeDeposit),
+    ...(p.complete_deposits || []).map(normalizeDeposit),
+  ]));
 
+  const seenSpecimenNumbers = new Set<string>();
   const layers: LayerInput[] = deposits
     .filter(d => d.layer || d.soil_color || d.soil_texture)
-    .map(depositToLayer);
+    .map(depositToLayer)
+    .map(l => {
+      if (!l.specimens || l.specimens.length === 0) return l;
+      return {
+        ...l,
+        specimens: l.specimens.filter(s => {
+          if (!s.number) return true;
+          if (seenSpecimenNumbers.has(s.number)) return false;
+          seenSpecimenNumbers.add(s.number);
+          return true;
+        }),
+      };
+    });
 
-  const artifacts: ArtifactInput[] = deposits.flatMap(d => depositArtifacts(d.layer || '', d.artifacts_found));
+  const artifacts: ArtifactInput[] = [];
+  const seenArtifactNumbers = new Set<string>();
+  for (const d of deposits) {
+    for (const a of depositArtifacts(d.layer || '', d.artifacts_found)) {
+      if (a.number) {
+        if (seenArtifactNumbers.has(a.number)) continue;
+        seenArtifactNumbers.add(a.number);
+      }
+      artifacts.push(a);
+    }
+  }
   for (const p of allPanels) {
     if (p.has_small_find === '是' && p.small_finds) {
       for (const s of p.small_finds) {
-        if (!s.number) continue;
+        if (!s.number || seenArtifactNumbers.has(s.number)) continue;
+        seenArtifactNumbers.add(s.number);
         artifacts.push({
           layer_number: '',
           type: s.category || s.name || '小件',
