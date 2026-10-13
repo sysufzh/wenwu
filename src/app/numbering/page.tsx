@@ -5,6 +5,17 @@ import { useSearchParams } from 'next/navigation';
 
 const NUMBERING_CATEGORIES = ['灰坑', '灰沟', '墓葬', '柱洞', '房子', '灶', '烧土遗迹', '石块堆积'];
 
+const TRENCH_OPTIONS = [
+  'T1-I', 'T1-II', 'T1-III', 'T1-IV', 'T1-V',
+  'TN09W35', 'TN10W35', 'TN11W35', 'TN09W36', 'TN10W36', 'TN11W36', 'TN09W37',
+  'TN20W32', 'TN21W32', 'TN20W33', 'TN21W33',
+  'TN27W30', 'TN28W30', 'TN27W29', 'TN28W29',
+  'TN39W32', 'TN39W31', 'TN40W32', 'TN40W31', 'TN41W32', 'TN41W33', 'TN40W33',
+];
+const POSITION_OPTIONS = ['北部', '东部', '南部', '西部', '中部', '东南部', '西南部', '西北部', '东北部'];
+const SHAPE_OPTIONS = ['近圆形', '近椭圆形', '不规则形', '长条形', '其它'];
+const SOIL_TEXTURE_OPTIONS = ['黏土', '细砂土', '粗砂土', '沙性黏土', '含黏土沙', '淤泥'];
+
 interface NumberingRequest {
   id: number;
   category: string;
@@ -205,15 +216,24 @@ function NumberingContent() {
             </div>
             <div>
               <label className={labelCls}>探方号</label>
-              <input value={form.trench_number} onChange={e => setForm(p => ({ ...p, trench_number: e.target.value }))} className={inputCls} placeholder="如T1" />
+              <select value={form.trench_number} onChange={e => setForm(p => ({ ...p, trench_number: e.target.value }))} className={inputCls}>
+                <option value="">请选择</option>
+                {TRENCH_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+              </select>
             </div>
             <div>
               <label className={labelCls}>遗迹位置</label>
-              <input value={form.position} onChange={e => setForm(p => ({ ...p, position: e.target.value }))} className={inputCls} placeholder="如T1西北角" />
+              <select value={form.position} onChange={e => setForm(p => ({ ...p, position: e.target.value }))} className={inputCls}>
+                <option value="">请选择</option>
+                {POSITION_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+              </select>
             </div>
             <div>
               <label className={labelCls}>开口形状</label>
-              <input value={form.shape} onChange={e => setForm(p => ({ ...p, shape: e.target.value }))} className={inputCls} placeholder="如近圆形" />
+              <select value={form.shape} onChange={e => setForm(p => ({ ...p, shape: e.target.value }))} className={inputCls}>
+                <option value="">请选择</option>
+                {SHAPE_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+              </select>
             </div>
             <div>
               <label className={labelCls}>尺寸</label>
@@ -221,7 +241,10 @@ function NumberingContent() {
             </div>
             <div>
               <label className={labelCls}>填土土质</label>
-              <input value={form.soil_texture} onChange={e => setForm(p => ({ ...p, soil_texture: e.target.value }))} className={inputCls} placeholder="如砂质黏土" />
+              <select value={form.soil_texture} onChange={e => setForm(p => ({ ...p, soil_texture: e.target.value }))} className={inputCls}>
+                <option value="">请选择</option>
+                {SOIL_TEXTURE_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+              </select>
             </div>
             <div>
               <label className={labelCls}>土色</label>
