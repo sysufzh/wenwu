@@ -28,6 +28,9 @@ interface FeaturePanel {
   break_relation?: string;
   shape?: string;
   dimensions?: string;
+  opening_depth?: string;
+  depth?: string;
+  bottom_size?: string;
   excavate_method?: string;
   section_dir?: string;
   complete_status?: string;
@@ -40,6 +43,13 @@ interface FeaturePanel {
   wall_desc?: string;
   bottom_clarity?: string;
   bottom_desc?: string;
+  posthole_angle?: string;
+  posthole_direction?: string;
+  stratigraphy_diagram?: string;
+  photo_info?: string;
+  dating?: string;
+  function_nature?: string;
+  sampling?: string;
   has_small_find?: string;
   small_finds?: SmallFindRow[];
 }
@@ -156,6 +166,7 @@ export function importFeatureFromDiaries(featureNumber: string): ImportedFeature
       p.bottom_desc && `底面${p.bottom_desc}`,
       p.mouth_clarity && `口部${p.mouth_clarity}`,
       p.bottom_clarity && `底部${p.bottom_clarity}`,
+      (p.posthole_angle || p.posthole_direction) && `柱洞倾斜角${p.posthole_angle || '?'}°，方向${p.posthole_direction || '?'}`,
     ];
     return parts.filter(Boolean).join('；');
   }));
@@ -198,10 +209,18 @@ export function importFeatureFromDiaries(featureNumber: string): ImportedFeature
     position: lastNonEmpty(allPanels.map(p => p.feature_position)),
     shape: lastNonEmpty(allPanels.map(p => p.shape)),
     opening_size: lastNonEmpty(allPanels.map(p => p.dimensions)),
+    opening_depth: lastNonEmpty(allPanels.map(p => p.opening_depth)),
+    depth: lastNonEmpty(allPanels.map(p => p.depth)),
+    bottom_size: lastNonEmpty(allPanels.map(p => p.bottom_size)),
+    drawing_info: lastNonEmpty(allPanels.map(p => p.stratigraphy_diagram)),
+    photo_info: lastNonEmpty(allPanels.map(p => p.photo_info)),
     stratigraphy,
     wall_bottom_detail,
     excavation_process: draftProcess(featureNumber, withPanels),
-    sampling: '',
+    dating: lastNonEmpty(allPanels.map(p => p.dating)),
+    function_nature: lastNonEmpty(allPanels.map(p => p.function_nature)),
+    sampling: lastNonEmpty(allPanels.map(p => p.sampling)),
+    remarks: lastNonEmpty(allPanels.map(p => p.special_observation)),
     recorder: lastNonEmpty(withPanels.map(d => d.recorder)),
     record_date: withPanels[withPanels.length - 1].diary_date,
     layers,

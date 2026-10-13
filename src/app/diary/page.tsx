@@ -66,6 +66,7 @@ interface CompleteDepositLayer {
 interface FeaturePanel {
   feature_number: string; feature_position: string; feature_type: string; feature_opening: string;
   break_relation: string; shape: string; dimensions: string;
+  opening_depth: string; depth: string; bottom_size: string;
   excavate_method: string; section_dir: string; complete_status: string;
   half_deposits: HalfDeposit[];
   special_observation: string;
@@ -74,6 +75,7 @@ interface FeaturePanel {
   posthole_angle: string; posthole_direction: string;
   complete_deposits: CompleteDepositLayer[];
   stratigraphy_diagram: string;
+  photo_info: string; dating: string; function_nature: string; sampling: string;
   has_small_find: string; small_finds: SmallFindRow[];
 }
 
@@ -133,12 +135,14 @@ const emptyCompleteDeposit = (): CompleteDepositLayer => ({
 const emptyFeature = (): FeaturePanel => ({
   feature_number: '', feature_position: '', feature_type: '灰坑', feature_opening: '',
   break_relation: '', shape: '圆形', dimensions: '',
+  opening_depth: '', depth: '', bottom_size: '',
   excavate_method: '1/2发掘法', section_dir: '', complete_status: '二分之一完成',
   half_deposits: [emptyHalfDeposit()], special_observation: '',
   mouth_clarity: '明显', profile_wall: '筒形', profile_bottom: '平底',
   wall_desc: '', bottom_clarity: '明显', bottom_desc: '',
   posthole_angle: '', posthole_direction: '',
   complete_deposits: [emptyCompleteDeposit()], stratigraphy_diagram: '',
+  photo_info: '', dating: '', function_nature: '', sampling: '',
   has_small_find: '否', small_finds: [emptySmallFind()],
 });
 
@@ -809,7 +813,7 @@ function DiaryContent() {
       for (let fi = 0; fi < form.feature_panels.length; fi++) {
         const fp = form.feature_panels[fi];
         if (form.feature_panels.length > 1) lines.push(`【遗迹${fi + 1}】${fp.feature_number}`);
-        lines.push(`今日开始对${fp.feature_number}进行发掘。${fp.feature_number}位于探方${fp.feature_position}，为${fp.feature_type}，开口于${fp.feature_opening}层下${fp.break_relation !== '无' ? `，${fp.break_relation}` : ''}。平面呈${fp.shape}，${fp.dimensions}。`);
+        lines.push(`今日开始对${fp.feature_number}进行发掘。${fp.feature_number}位于探方${fp.feature_position}，为${fp.feature_type}，开口于${fp.feature_opening}层下${fp.break_relation !== '无' ? `，${fp.break_relation}` : ''}。平面呈${fp.shape}，${fp.dimensions}${fp.opening_depth ? `，开口距地表${fp.opening_depth}` : ''}。`);
         lines.push(`采用${fp.excavate_method}进行发掘，解剖方向${fp.section_dir}。`);
 
         if (fp.complete_status === '全部清理完成') {
@@ -848,7 +852,9 @@ function DiaryContent() {
           lines.push('');
           lines.push(`${fp.feature_number}小结：`);
           lines.push(`位置与层位：${fp.feature_number}位于探方${fp.feature_position}，开口于${fp.feature_opening}层下${fp.break_relation !== '无' ? `，${fp.break_relation}` : ''}。`);
-          lines.push(`形状与尺寸：平面呈${fp.shape}，${fp.dimensions}。剖面壁部呈${fp.profile_wall}，底部呈${fp.profile_bottom}。口部${fp.mouth_clarity}，底部${fp.bottom_clarity}。${fp.wall_desc ? `壁面${fp.wall_desc}。` : ''}${fp.bottom_desc ? `底面${fp.bottom_desc}。` : ''}`);
+          lines.push(`形状与尺寸：平面呈${fp.shape}，${fp.dimensions}${fp.opening_depth ? `，开口距地表${fp.opening_depth}` : ''}。剖面壁部呈${fp.profile_wall}，底部呈${fp.profile_bottom}。口部${fp.mouth_clarity}，底部${fp.bottom_clarity}。${fp.depth ? `深度${fp.depth}。` : ''}${fp.bottom_size ? `底部尺寸${fp.bottom_size}。` : ''}${fp.wall_desc ? `壁面${fp.wall_desc}。` : ''}${fp.bottom_desc ? `底面${fp.bottom_desc}。` : ''}`);
+          const metaParts = [fp.dating && `年代推断${fp.dating}`, fp.function_nature && `性质功能${fp.function_nature}`, fp.sampling && `采样${fp.sampling}`, fp.photo_info && `摄影${fp.photo_info}`].filter(Boolean);
+          if (metaParts.length) lines.push(`${metaParts.join('；')}。`);
           lines.push('堆积情况：');
           for (const cd of fp.complete_deposits) {
             if (!cd.layer && !cd.texture) continue;
@@ -1345,6 +1351,7 @@ function DiaryContent() {
                       <div><label className={lbl}>打破关系{req}</label><input value={fp.break_relation} onChange={e => uf(fi, 'break_relation', e.target.value)} className={inp} placeholder="打破沟状遗迹（如无可填无）" /></div>
                       <div><label className={lbl}>平面形状{req}</label><select value={fp.shape} onChange={e => uf(fi, 'shape', e.target.value)} className={inp}><option>圆形</option><option>椭圆形</option><option>长方形</option><option>长条形</option><option>不规则形</option></select></div>
                       <div><label className={lbl}>尺寸{req}</label><input value={fp.dimensions} onChange={e => uf(fi, 'dimensions', e.target.value)} className={inp} placeholder="直径80~85厘米" /></div>
+                      <div><label className={lbl}>开口距地表深度{req}</label><input value={fp.opening_depth} onChange={e => uf(fi, 'opening_depth', e.target.value)} className={inp} placeholder="距地表深…厘米" /></div>
                       <div><label className={lbl}>发掘方法{req}</label><select value={fp.excavate_method} onChange={e => uf(fi, 'excavate_method', e.target.value)} className={inp}><option>1/2发掘法</option><option>全面发掘</option></select></div>
                       <div><label className={lbl}>解剖方向{req}</label><input value={fp.section_dir} onChange={e => uf(fi, 'section_dir', e.target.value)} className={inp} placeholder="正南北" /></div>
                       <div><label className={lbl}>完工状态{req}</label><select value={fp.complete_status} onChange={e => uf(fi, 'complete_status', e.target.value)} className={inp}><option>二分之一完成</option><option>二分之一未完成</option><option>全部清理完成</option></select></div>
@@ -1429,6 +1436,18 @@ function DiaryContent() {
                         <div className="grid grid-cols-2 gap-3">
                           <div><label className={lbl}>柱洞倾斜角（如适用）{req}</label><input value={fp.posthole_angle} onChange={e => uf(fi, 'posthole_angle', e.target.value)} className={inp} placeholder="°" /></div>
                           <div><label className={lbl}>柱洞方向（如适用）{req}</label><input value={fp.posthole_direction} onChange={e => uf(fi, 'posthole_direction', e.target.value)} className={inp} placeholder="正北等" /></div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div><label className={lbl}>深度{req}</label><input value={fp.depth} onChange={e => uf(fi, 'depth', e.target.value)} className={inp} placeholder="深…厘米" /></div>
+                          <div><label className={lbl}>底部尺寸{req}</label><input value={fp.bottom_size} onChange={e => uf(fi, 'bottom_size', e.target.value)} className={inp} placeholder="底径…厘米" /></div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div><label className={lbl}>摄影{req}</label><input value={fp.photo_info} onChange={e => uf(fi, 'photo_info', e.target.value)} className={inp} placeholder="摄影号" /></div>
+                          <div><label className={lbl}>采样{req}</label><input value={fp.sampling} onChange={e => uf(fi, 'sampling', e.target.value)} className={inp} placeholder="采样信息" /></div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div><label className={lbl}>年代推断{req}</label><input value={fp.dating} onChange={e => uf(fi, 'dating', e.target.value)} className={inp} placeholder="年代推断" /></div>
+                          <div><label className={lbl}>性质功能{req}</label><input value={fp.function_nature} onChange={e => uf(fi, 'function_nature', e.target.value)} className={inp} placeholder="性质功能" /></div>
                         </div>
 
                         {/* Complete deposit layers */}
