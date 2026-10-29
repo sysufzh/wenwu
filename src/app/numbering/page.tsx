@@ -128,6 +128,10 @@ function NumberingContent() {
     else alert((await res.json()).error || '操作失败');
   };
 
+  const confirmTransition = (id: number, action: string, message: string) => {
+    if (window.confirm(message)) transition(id, action);
+  };
+
   const handleOpenNew = () => {
     setEditingId(null);
     setForm(emptyForm);
@@ -181,11 +185,13 @@ function NumberingContent() {
     setSaving(false);
   };
 
-  const handleReject = (id: number) => {
+  const handleReject = (r: NumberingRequest) => {
     const reason = prompt('请输入驳回原因');
     if (reason === null) return;
     if (!reason.trim()) { alert('驳回原因不能为空'); return; }
-    transition(id, 'reject', { reject_reason: reason.trim() });
+    const label = [r.category, r.trench_number].filter(Boolean).join(' · ');
+    if (!window.confirm(`确定要驳回「${label}」的给号申请吗？`)) return;
+    transition(r.id, 'reject', { reject_reason: reason.trim() });
   };
 
   const inputCls = 'w-full px-2 py-1.5 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-amber-500';
@@ -317,7 +323,7 @@ function NumberingContent() {
                       <td colSpan={5} className="px-4 py-3 text-stone-400">已销号</td>
                       <td className="px-4 py-3 text-right">
                         {isAdmin && (
-                          <button onClick={() => transition(r.id, 'undo-cancel')} className={btn('bg-stone-100 text-stone-700 hover:bg-stone-200')}>撤销销号</button>
+                          <button onClick={() => confirmTransition(r.id, 'undo-cancel', `确定要撤销销号「${r.assigned_number}」吗？该编号将恢复使用。`)} className={btn('bg-stone-100 text-stone-700 hover:bg-stone-200')}>撤销销号</button>
                         )}
                       </td>
                     </tr>
@@ -347,19 +353,19 @@ function NumberingContent() {
                           {r.status === '待审批' && isAdmin && (
                             <>
                               <button onClick={() => transition(r.id, 'approve')} className={btn('bg-green-50 text-green-700 hover:bg-green-100')}>通过</button>
-                              <button onClick={() => handleReject(r.id)} className={btn('bg-red-50 text-red-700 hover:bg-red-100')}>驳回</button>
+                              <button onClick={() => handleReject(r)} className={btn('bg-red-50 text-red-700 hover:bg-red-100')}>驳回</button>
                             </>
                           )}
                           {numbered && (
-                            <button onClick={() => transition(r.id, 'cancel-apply')} className={btn('bg-orange-50 text-orange-700 hover:bg-orange-100')}>申请销号</button>
+                            <button onClick={() => confirmTransition(r.id, 'cancel-apply', `确定要申请销号「${r.assigned_number}」吗？销号需管理员审核通过后才正式作废。`)} className={btn('bg-orange-50 text-orange-700 hover:bg-orange-100')}>申请销号</button>
                           )}
                           {numbered && (
                             <button onClick={() => handleEdit(r)} className={btn('bg-stone-100 text-stone-700 hover:bg-stone-200')}>编辑</button>
                           )}
                           {r.status === '待销号' && isAdmin && (
                             <>
-                              <button onClick={() => transition(r.id, 'cancel-approve')} className={btn('bg-green-50 text-green-700 hover:bg-green-100')}>通过销号</button>
-                              <button onClick={() => transition(r.id, 'cancel-reject')} className={btn('bg-red-50 text-red-700 hover:bg-red-100')}>驳回销号</button>
+                              <button onClick={() => confirmTransition(r.id, 'cancel-approve', `确定要通过销号「${r.assigned_number}」吗？该编号将正式作废。`)} className={btn('bg-green-50 text-green-700 hover:bg-green-100')}>通过销号</button>
+                              <button onClick={() => confirmTransition(r.id, 'cancel-reject', `确定要驳回销号「${r.assigned_number}」吗？该编号将恢复使用。`)} className={btn('bg-red-50 text-red-700 hover:bg-red-100')}>驳回销号</button>
                             </>
                           )}
                         </div>
