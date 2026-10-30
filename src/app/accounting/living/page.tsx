@@ -140,6 +140,14 @@ function LivingLedgerContent() {
     setShowForm(!showForm);
   };
 
+  const handleExport = () => {
+    const params = new URLSearchParams();
+    params.set('ledgerType', '生活');
+    if (dateFrom) params.set('dateFrom', dateFrom);
+    if (dateTo) params.set('dateTo', dateTo);
+    window.location.href = `/api/transactions/export?${params}`;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.amount || parseFloat(form.amount) <= 0) { alert('金额必须大于0'); return; }
@@ -167,10 +175,16 @@ function LivingLedgerContent() {
     <div className="max-w-5xl mx-auto space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <h2 className="text-2xl font-bold text-stone-800">生活账本</h2>
-        <button onClick={handleNewForm}
-          className="inline-flex items-center justify-center gap-1 bg-amber-700 text-white px-4 py-2 rounded-lg text-sm hover:bg-amber-800 transition-colors self-start">
-          + 新建记录
-        </button>
+        <div className="flex gap-2">
+          <button onClick={handleExport}
+            className="px-3 py-2 rounded-lg text-sm border border-stone-300 text-stone-600 hover:bg-stone-100 transition-colors">
+            导出 Excel
+          </button>
+          <button onClick={handleNewForm}
+            className="inline-flex items-center justify-center gap-1 bg-amber-700 text-white px-4 py-2 rounded-lg text-sm hover:bg-amber-800 transition-colors self-start">
+            + 新建记录
+          </button>
+        </div>
       </div>
 
       {/* Stats */}

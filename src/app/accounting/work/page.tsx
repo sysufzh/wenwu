@@ -225,6 +225,18 @@ function WorkLedgerContent() {
     setShowForm(!showForm);
   };
 
+  const handleExport = () => {
+    const params = new URLSearchParams();
+    params.set('ledgerType', '工作');
+    if (search) params.set('search', search);
+    if (typeFilter) params.set('type', typeFilter);
+    if (categoryFilter) params.set('category', categoryFilter);
+    if (fundingSourceFilter) params.set('fundingSource', fundingSourceFilter);
+    if (dateFrom) params.set('dateFrom', dateFrom);
+    if (dateTo) params.set('dateTo', dateTo);
+    window.location.href = `/api/transactions/export?${params}`;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.amount || parseFloat(form.amount) <= 0) { alert('金额必须大于0'); return; }
@@ -287,6 +299,10 @@ function WorkLedgerContent() {
           <button onClick={() => setShowStats(!showStats)}
             className="px-3 py-2 rounded-lg text-sm border border-stone-300 text-stone-600 hover:bg-stone-100 transition-colors">
             {showStats ? '隐藏统计' : '查看统计'}
+          </button>
+          <button onClick={handleExport}
+            className="px-3 py-2 rounded-lg text-sm border border-stone-300 text-stone-600 hover:bg-stone-100 transition-colors">
+            导出 Excel
           </button>
           <button onClick={handleNewForm}
             className="inline-flex items-center justify-center gap-1 bg-amber-700 text-white px-4 py-2 rounded-lg text-sm hover:bg-amber-800 transition-colors self-start">

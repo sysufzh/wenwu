@@ -47,10 +47,8 @@ export interface TransactionListParams {
   sortOrder?: 'asc' | 'desc';
 }
 
-export function getTransactions(params: TransactionListParams = {}) {
-  const db = getDb();
-  const { search, type, category, fundingSource, ledgerType, dateFrom, dateTo, page = 1, limit = 20, sortField, sortOrder } = params;
-
+function buildTransactionFilter(params: TransactionListParams) {
+  const { search, type, category, fundingSource, ledgerType, dateFrom, dateTo } = params;
   let whereClause = 'WHERE 1=1';
   const conditions: Record<string, string | number> = {};
 
@@ -89,6 +87,15 @@ export function getTransactions(params: TransactionListParams = {}) {
     conditions['dateTo'] = dateTo;
   }
 
+  return { whereClause, conditions };
+}
+
+export function getTransactions(params: TransactionListParams = {}) {
+  const db = getDb();
+  const { page = 1, limit = 20, sortField, sortOrder } = params;
+
+  const { whereClause, conditions } = buildTransactionFilter(params);
+
   const countRow = db.prepare(`SELECT COUNT(*) as total FROM transactions ${whereClause}`).get(conditions) as { total: number };
 
   const offset = (page - 1) * limit;
@@ -111,6 +118,14 @@ export function getTransactions(params: TransactionListParams = {}) {
     limit,
     totalPages: Math.ceil(countRow.total / limit),
   };
+}
+
+export function getTransactionsForExport(params: TransactionListParams = {}) {
+  const db = getDb();
+  const { whereClause, conditions } = buildTransactionFilter(params);
+  return db.prepare(
+    `SELECT * FROM transactions ${whereClause} ORDER BY transaction_date ASC, id ASC`
+  ).all(conditions) as Transaction[];
 }
 
 export function getTransactionById(id: number): Transaction | undefined {
