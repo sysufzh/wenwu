@@ -12,6 +12,7 @@ const TRENCH_OPTIONS = [
   'TN27W30', 'TN28W30', 'TN27W29', 'TN28W29',
   'TN39W32', 'TN39W31', 'TN40W32', 'TN40W31', 'TN41W32', 'TN41W33', 'TN40W33',
   'TN09E02', 'TN08E02', 'TN09E03', 'TN08E03', 'TN10E03', 'TN08E04', 'TN09E04',
+  'TN08E05', 'TN09E05',
 ];
 const POSITION_OPTIONS = ['北部', '东部', '南部', '西部', '中部', '东南部', '西南部', '西北部', '东北部'];
 const SHAPE_OPTIONS = ['近圆形', '近椭圆形', '不规则形', '长条形', '长方形', '其它'];
